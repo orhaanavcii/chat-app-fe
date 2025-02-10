@@ -31,7 +31,7 @@ const Messages = props => {
       if (!userMessageList) {
         axios.get('/message-history/' + sessionStorage.getItem('userName')).then(res => {
           console.log(res, activeUser);
-          setUserMassageList(res?.data?.find(e => e?.title === activeUser?.userName)?.messages);
+          setUserMassageList(res?.data?.data?.find(e => e?.title === activeUser?.userName)?.messages);
         });
       }
     }
@@ -177,6 +177,7 @@ const Messages = props => {
                     class="form-control type_msg"
                     placeholder="Type your message..."
                     onChange={e => setMessageText(e?.target.value)}
+                    value={messageText}
                   ></textarea>
                   <div class="input-group-append">
                     <span class="input-group-text send_btn" onClick={() => sendMessage(messageText)}>

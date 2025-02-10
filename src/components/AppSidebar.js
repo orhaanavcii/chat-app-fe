@@ -11,8 +11,6 @@ import navigation from '../_nav';
 const AppSidebar = () => {
   const dispatch = useDispatch();
   const unfoldable = useSelector(state => state.sidebarUnfoldable);
-  // eslint-disable-next-line jsx-a11y/alt-text
-  // eslint-disable-next-line jsx-a11y/alt-text
   return (
     <CSidebar position="fixed" unfoldable={unfoldable}>
       <CSidebarBrand className="d-none d-md-flex" to="/">
