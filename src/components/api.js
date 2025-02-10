@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { url, tokenName } from './config';
 
-let accessToken = localStorage.getItem(tokenName);
+let accessToken = sessionStorage.getItem(tokenName);
 
 let axiosInstance = axios.create({
   baseURL: url,
@@ -24,7 +24,7 @@ axiosInstance.interceptors.response.use(
       }
     }
     if (error.request.status === 0) {
-      localStorage.removeItem('token');
+      sessionStorage.removeItem('token');
       window.location.reload();
     }
     return error;

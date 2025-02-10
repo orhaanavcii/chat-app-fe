@@ -25,8 +25,8 @@ const Login = () => {
       username: userForm.kullaniciAdi.toString(),
       password: userForm.kullaniciSifre.toString(),
     };
-    localStorage.setItem('token', '123');
-    localStorage.setItem('userName', userForm.kullaniciAdi.toString());
+    sessionStorage.setItem('token', '123');
+    sessionStorage.setItem('userName', userForm.kullaniciAdi.toString());
     window.location.replace('/messages');
   };
 

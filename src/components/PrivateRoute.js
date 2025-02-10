@@ -2,7 +2,7 @@ import React from 'react';
 import { Route, Redirect } from 'react-router-dom';
 
 function getJWT() {
-  if (localStorage.getItem('token') === null) return false;
+  if (sessionStorage.getItem('token') === null) return false;
   return true;
 }
 

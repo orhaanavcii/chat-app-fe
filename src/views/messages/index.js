@@ -68,14 +68,14 @@ const Messages = props => {
   const client = new Client({
     brokerURL: brokerUrl,
     connectHeaders: {
-      username: localStorage.getItem('userName'),
+      username: sessionStorage.getItem('userName'),
     },
     onConnect: () => {
       console.log('client a connected to chat !');
-      client.subscribe(`/user/${localStorage.getItem('userName')}/messages`, message => {
+      client.subscribe(`/user/${sessionStorage.getItem('userName')}/messages`, message => {
         console.log('New message for client:', JSON.parse(message.body));
         setUserMassageList(JSON.parse(message.body));
-        // deliveredMessage(JSON.parse(message.body), localStorage.getItem('userName'));
+        // deliveredMessage(JSON.parse(message.body), sessionStorage.getItem('userName'));
       });
       /*     clientA.subscribe("/main", (message) => {
         console.log("New message for client a :", JSON.parse(message.body));
@@ -94,9 +94,9 @@ const Messages = props => {
           traceId: crypto.randomUUID(),
           chatId: 1,
           messageId: crypto.randomUUID(),
-          sender: localStorage.getItem('userName'),
+          sender: sessionStorage.getItem('userName'),
           receiver: activeUser.userName,
-          participants: [localStorage.getItem('userName'), activeUser.userName],
+          participants: [sessionStorage.getItem('userName'), activeUser.userName],
           content: messageText,
           type: 'CHAT_MESSAGE',
         },
