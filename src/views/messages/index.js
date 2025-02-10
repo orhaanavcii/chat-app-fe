@@ -27,7 +27,7 @@ const Messages = props => {
   useEffect(() => {
     if (activeUser) {
       if (!userMessageList) {
-        axios.get('/message-history/' + user).then(res => {
+        axios.get('/message-history/' + activeUser?.userName).then(res => {
           console.log(res, activeUser);
           setUserMassageList(res?.data?.find(e => e?.title === activeUser?.userName)?.messages);
         });
