@@ -1,5 +1,5 @@
 import { act } from 'react';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 
 const Messages = props => {
@@ -13,8 +13,6 @@ const Messages = props => {
   const [filterList, setFilterList] = useState();
   const [messageText, setMessageText] = useState();
   const [userMessageList, setUserMassageList] = useState();
-  const [client, setClient] = useState();
-  const isFetched = useRef(false);
 
   useEffect(() => {
     if (filter) {
@@ -67,28 +65,25 @@ const Messages = props => {
 
   const brokerUrl = 'ws://localhost:8080/ws/websocket';
 
-  useEffect(() => {
-    if (isFetched) {
-      isFetched.current = true;
-      setClient(
-        new Client({
-          brokerURL: brokerUrl,
-          connectHeaders: {
-            username: sessionStorage.getItem('userName'),
-          },
-          onConnect: () => {
-            console.log('client a connected to chat !');
-            client.subscribe(`/user/${sessionStorage.getItem('userName')}/messages`, message => {
-              console.log('New message for client:', JSON.parse(message.body));
-              setUserMassageList(JSON.parse(message.body));
-              // deliveredMessage(JSON.parse(message.body), sessionStorage.getItem('userName'));
-            });
-          },
-        }),
-      );
-      client.activate();
-    }
-  }, [isFetched]);
+  const client = new Client({
+    brokerURL: brokerUrl,
+    connectHeaders: {
+      username: sessionStorage.getItem('userName'),
+    },
+    onConnect: () => {
+      console.log('client a connected to chat !');
+      client.subscribe(`/user/${sessionStorage.getItem('userName')}/messages`, message => {
+        console.log('New message for client:', JSON.parse(message.body));
+        setUserMassageList(JSON.parse(message.body));
+        // deliveredMessage(JSON.parse(message.body), sessionStorage.getItem('userName'));
+      });
+      /*     clientA.subscribe("/main", (message) => {
+        console.log("New message for client a :", JSON.parse(message.body));
+      }); */
+    },
+  });
+
+  client.activate();
 
   const sendMessage = () => {
     client.publish({
