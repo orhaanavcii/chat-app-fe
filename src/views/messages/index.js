@@ -26,7 +26,7 @@ const Messages = props => {
   useEffect(() => {
     if (!userMessageList) {
       messageHistory(sessionStorage.getItem('userName')).then(res => {
-        setUserMassageList(res?.data?.find(e => e?.title === activeUser?.userName));
+        setUserMassageList(res?.data?.find(e => e?.title === activeUser?.userName)?.messages);
       });
     }
   }, [userMessageList]);
@@ -141,7 +141,10 @@ const Messages = props => {
                       <li
                         class={e?.userName === activeUser?.userName ? 'active' : ''}
                         style={{ cursor: 'pointer' }}
-                        onClick={() => setActiveUser(e)}
+                        onClick={() => {
+                          setActiveUser(e);
+                          setUserMassageList(null);
+                        }}
                       >
                         <div>
                           <div class="d-flex bd-highlight">
