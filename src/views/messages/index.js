@@ -1,7 +1,5 @@
 import { act } from 'react';
-import { useEffect, useState } from 'react';
-import { messageHistory } from 'src/services/MessageServices';
-import axios from '../../components/api';
+import { useEffect, useState, useRef } from 'react';
 import useWebSocket from './useWebSoket';
 
 const Messages = props => {
@@ -17,6 +15,11 @@ const Messages = props => {
   const userName = sessionStorage.getItem('userName');
   const brokerUrl = 'ws://localhost:8080/ws'; // WebSocket sunucu adresi
   const { userMessageList, setUserMassageList, sendMessage } = useWebSocket(brokerUrl, userName, activeUser);
+  const messagesEndRef = useRef(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   useEffect(() => {
     if (filter) {
@@ -25,17 +28,6 @@ const Messages = props => {
       setFilterList(userList);
     }
   }, [filter]);
-
-  useEffect(() => {
-    if (activeUser) {
-      if (!userMessageList) {
-        axios.get('/message-history/' + sessionStorage.getItem('userName')).then(res => {
-          console.log(res, activeUser);
-          setUserMassageList(res?.data?.data?.find(e => e?.title === activeUser?.userName)?.messages);
-        });
-      }
-    }
-  }, [userMessageList, activeUser]);
 
   useEffect(() => {
     if (!userList) {
@@ -77,6 +69,11 @@ const Messages = props => {
       </div>
     );
   };
+
+  useEffect(() => {
+    setUserMassageList(null);
+    scrollToBottom();
+  }, [activeUser]);
 
   return (
     <div className="maincontainer">
@@ -164,6 +161,7 @@ const Messages = props => {
                     );
                   }
                 })}
+                <div ref={messagesEndRef} />
               </div>
               <div class="card-footer">
                 <div class="input-group">
@@ -180,7 +178,13 @@ const Messages = props => {
                     value={messageText}
                   ></textarea>
                   <div class="input-group-append">
-                    <span class="input-group-text send_btn" onClick={() => sendMessage(messageText)}>
+                    <span
+                      class="input-group-text send_btn"
+                      onClick={() => {
+                        sendMessage(messageText);
+                        scrollToBottom();
+                      }}
+                    >
                       <i class="fas fa-location-arrow"></i>
                     </span>
                   </div>

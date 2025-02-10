@@ -1,9 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
+import axios from '../../components/api';
 
 const useWebSocket = (brokerUrl, userName, activeUser) => {
   const stompClientRef = useRef(null);
   const [userMessageList, setUserMassageList] = useState([]);
+
+  useEffect(() => {
+    if (activeUser) {
+      if (!userMessageList) {
+        axios.get('/message-history/' + sessionStorage.getItem('userName')).then(res => {
+          setUserMassageList(res?.data?.data?.find(e => e?.title === activeUser?.userName)?.messages);
+        });
+      }
+    }
+  }, [userMessageList, activeUser]);
 
   useEffect(() => {
     if (!stompClientRef.current) {
@@ -17,7 +28,11 @@ const useWebSocket = (brokerUrl, userName, activeUser) => {
 
           client.subscribe(`/user/${userName}/messages`, message => {
             console.log('New message received:', message.body);
-            setUserMassageList(prevMessages => [...prevMessages, JSON.parse(message.body)]);
+            if (userMessageList?.length > 0) {
+              setUserMassageList(prevMessages => [...prevMessages, JSON.parse(message.body)]);
+            } else {
+              setUserMassageList([JSON.parse(message.body)]);
+            }
           });
         },
       });
