@@ -27,9 +27,9 @@ const Messages = props => {
   useEffect(() => {
     if (activeUser) {
       if (!userMessageList) {
-        axios.get('/message-history/' + activeUser?.userName).then(res => {
+        axios.get('/message-history/' + sessionStorage.getItem('userName')).then(res => {
           console.log(res, activeUser);
-          setUserMassageList(res?.data?.find(e => e?.title === activeUser?.userName)?.messages);
+          setUserMassageList(res?.data?.data?.find(e => e?.title === activeUser?.userName)?.messages);
         });
 
         // messageHistory(sessionStorage.getItem('userName')).then(res => {
@@ -118,6 +118,10 @@ const Messages = props => {
         },
       }),
     });
+    const tempData = userMessageList || [];
+    tempData.push({ content: messageText, sender: sessionStorage.getItem('userName') });
+    setUserMassageList(tempData);
+    setMessageText('');
   };
 
   return (
@@ -219,6 +223,7 @@ const Messages = props => {
                     class="form-control type_msg"
                     placeholder="Type your message..."
                     onChange={e => setMessageText(e?.target.value)}
+                    value={messageText}
                   ></textarea>
                   <div class="input-group-append">
                     <span class="input-group-text send_btn" onClick={() => sendMessage()}>
