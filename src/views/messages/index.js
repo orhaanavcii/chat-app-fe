@@ -13,7 +13,7 @@ const Messages = props => {
   const [filterList, setFilterList] = useState();
   const [messageText, setMessageText] = useState();
   const userName = sessionStorage.getItem('userName');
-  const brokerUrl = 'ws://localhost:8080/ws'; // WebSocket sunucu adresi
+  const brokerUrl = 'ws://localhost:8080/ws/websocket'; // WebSocket sunucu adresi
   const { userMessageList, setUserMassageList, sendMessage } = useWebSocket(brokerUrl, userName, activeUser);
   const messagesEndRef = useRef(null);
 
