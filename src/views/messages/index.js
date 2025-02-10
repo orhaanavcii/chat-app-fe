@@ -25,9 +25,10 @@ const Messages = props => {
 
   useEffect(() => {
     if (!userMessageList) {
-      messageHistory(sessionStorage.getItem('userName')).then(res => {
-        setUserMassageList(res?.data?.find(e => e?.title === activeUser?.userName)?.messages);
-      });
+      console.log(messageHistory(sessionStorage.getItem('userName')))
+      // messageHistory(sessionStorage.getItem('userName')).then(res => {
+      //   setUserMassageList(res?.data?.find(e => e?.title === activeUser?.userName)?.messages);
+      // });
     }
   }, [userMessageList]);
 
