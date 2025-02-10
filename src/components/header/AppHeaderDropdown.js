@@ -29,8 +29,8 @@ const AppHeaderDropdown = () => {
               <div id="profileImage" style={{ margin: '12px auto 5px auto' }}>
                 {'AA'}
               </div>
-              <div style={{ fontSize: '12px', fontWeight: 'bold ' }}>{'Test'}</div>
-              <div style={{ fontSize: '12px' }}>test@test.com</div>
+              <div style={{ fontSize: '12px', fontWeight: 'bold ' }}>{localStorage.getItem('userName')}</div>
+              <div style={{ fontSize: '12px' }}>{localStorage.getItem('userName')}</div>
             </div>
             <CDropdownHeader className="bg-light fw-semibold py-2">Settings</CDropdownHeader>
             <CDropdownItem href="#">
