@@ -1,6 +1,7 @@
 import { act } from 'react';
 import { useEffect, useState } from 'react';
 import { Client } from '@stomp/stompjs';
+import { messageHistory } from 'src/services/MessageServices';
 
 const Messages = props => {
   const [userList, setUserList] = useState();
@@ -21,6 +22,14 @@ const Messages = props => {
       setFilterList(userList);
     }
   }, [filter]);
+
+  useEffect(() => {
+    if (!userMessageList) {
+      messageHistory(sessionStorage.getItem('userName')).then(res => {
+        setUserMassageList(res?.data?.find(e => e?.title === activeUser?.userName));
+      });
+    }
+  }, [userMessageList]);
 
   useEffect(() => {
     if (!userList) {
@@ -174,14 +183,14 @@ const Messages = props => {
               </div>
               <div class="card-body msg_card_body">
                 {userMessageList?.map(e => {
-                  if (e?.direction === 'OUT') {
-                    return inMessageTemp(
-                      userList?.find(x => x?.userName === e?.receiver),
+                  if (e?.sender === sessionStorage.getItem('userName')) {
+                    return outMessageTemp(
+                      userList?.find(x => x?.userName === e?.sender),
                       e?.content,
                     );
                   } else {
-                    return outMessageTemp(
-                      userList?.find(x => x?.userName === e?.sender),
+                    return inMessageTemp(
+                      userList?.find(x => x?.userName === e?.receiver),
                       e?.content,
                     );
                   }

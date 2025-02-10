@@ -24,8 +24,8 @@ axiosInstance.interceptors.response.use(
       }
     }
     if (error.request.status === 0) {
-      sessionStorage.removeItem('token');
-      window.location.reload();
+      // sessionStorage.removeItem('token');
+      // window.location.reload();
     }
     return error;
   },
