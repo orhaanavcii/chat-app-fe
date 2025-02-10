@@ -45,7 +45,11 @@ const Messages = props => {
         { name: 'Orhan Avcı', userName: 'oavci', icon: 'fa-solid fa-user-ninja' },
         { name: 'Emre Altınayar', userName: 'ealtinayar', icon: 'fa-solid fa-user-gear' },
         { name: 'Enes Döngez', userName: 'edongez', icon: 'fa-solid fa-user-astronaut' },
-      ];
+      ]
+        ?.filter(e => e?.userName !== sessionStorage.getItem('userName'))
+        .map(x => {
+          return x;
+        });
       setUserList(tempList);
       setFilterList(tempList);
     }
