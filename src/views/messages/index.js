@@ -74,12 +74,11 @@ const Messages = props => {
       console.log('client a connected to chat !');
       client.subscribe(`/user/${sessionStorage.getItem('userName')}/messages`, message => {
         console.log('New message for client:', JSON.parse(message.body));
-        setUserMassageList(JSON.parse(message.body));
+        const tempData = userMessageList || [];
+        tempData.push(JSON.parse(message.body));
+        setUserMassageList(tempData);
         // deliveredMessage(JSON.parse(message.body), sessionStorage.getItem('userName'));
       });
-      /*     clientA.subscribe("/main", (message) => {
-        console.log("New message for client a :", JSON.parse(message.body));
-      }); */
     },
   });
 
@@ -174,8 +173,19 @@ const Messages = props => {
                 </div>
               </div>
               <div class="card-body msg_card_body">
-                {inMessageTemp(activeUser, 'tesetMessage')}
-                {outMessageTemp(activeUser, 'tesetMessage')}
+                {userMessageList?.map(e => {
+                  if (e?.direction === 'OUT') {
+                    return inMessageTemp(
+                      userList?.find(x => x?.userName === e?.receiver),
+                      e?.content,
+                    );
+                  } else {
+                    return outMessageTemp(
+                      userList?.find(x => x?.userName === e?.sender),
+                      e?.content,
+                    );
+                  }
+                })}
               </div>
               <div class="card-footer">
                 <div class="input-group">
