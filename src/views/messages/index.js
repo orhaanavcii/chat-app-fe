@@ -1,12 +1,26 @@
 import { act } from 'react';
 import { useEffect, useState } from 'react';
+import { Client } from '@stomp/stompjs';
 
 const Messages = props => {
   const [userList, setUserList] = useState();
-  const [activeUser, setActiveUser] = useState({ name: 'Harun Acar', userName: 'hacar' });
+  const [activeUser, setActiveUser] = useState({
+    name: 'Harun Acar',
+    userName: 'hacar',
+    icon: 'fa-solid fa-user-doctor',
+  });
   const [filter, setFilter] = useState();
   const [filterList, setFilterList] = useState();
   const [messageText, setMessageText] = useState();
+  const [userMessageList, setUserMassageList] = useState();
+
+  useEffect(() => {
+    if (filter) {
+      setFilterList(userList?.filter(e => e?.name?.toLowerCase()?.includes(filter?.toString()?.toLowerCase())));
+    } else {
+      setFilterList(userList);
+    }
+  }, [filter]);
 
   useEffect(() => {
     if (!userList) {
@@ -16,14 +30,14 @@ const Messages = props => {
         { name: 'Emre Altınayar', userName: 'ealtinayar', icon: 'fa-solid fa-user-gear' },
         { name: 'Enes Döngez', userName: 'edongez', icon: 'fa-solid fa-user-astronaut' },
       ]);
+      setFilterList([
+        { name: 'Harun Acar', userName: 'hacar', icon: 'fa-solid fa-user-doctor' },
+        { name: 'Orhan Avcı', userName: 'oavci', icon: 'fa-solid fa-user-ninja' },
+        { name: 'Emre Altınayar', userName: 'ealtinayar', icon: 'fa-solid fa-user-gear' },
+        { name: 'Enes Döngez', userName: 'edongez', icon: 'fa-solid fa-user-astronaut' },
+      ]);
     }
   }, []);
-
-  const sendMessage = () => {
-    if (messageText) {
-      console.log(messageText);
-    }
-  };
 
   const inMessageTemp = (user, message) => {
     return (
@@ -47,6 +61,47 @@ const Messages = props => {
         </div>
       </div>
     );
+  };
+
+  const brokerUrl = 'ws://localhost:8080/ws/websocket';
+
+  const client = new Client({
+    brokerURL: brokerUrl,
+    connectHeaders: {
+      username: localStorage.getItem('userName'),
+    },
+    onConnect: () => {
+      console.log('client a connected to chat !');
+      client.subscribe(`/user/${localStorage.getItem('userName')}/messages`, message => {
+        console.log('New message for client:', JSON.parse(message.body));
+        setUserMassageList(JSON.parse(message.body));
+        // deliveredMessage(JSON.parse(message.body), localStorage.getItem('userName'));
+      });
+      /*     clientA.subscribe("/main", (message) => {
+        console.log("New message for client a :", JSON.parse(message.body));
+      }); */
+    },
+  });
+
+  client.activate();
+
+  const sendMessage = () => {
+    client.publish({
+      destination: '/app/chat.sendMessage',
+      body: JSON.stringify({
+        type: 'CHAT_MESSAGE',
+        payload: {
+          traceId: crypto.randomUUID(),
+          chatId: 1,
+          messageId: crypto.randomUUID(),
+          sender: localStorage.getItem('userName'),
+          receiver: activeUser.userName,
+          participants: [localStorage.getItem('userName'), activeUser.userName],
+          content: messageText,
+          type: 'CHAT_MESSAGE',
+        },
+      }),
+    });
   };
 
   return (
@@ -73,7 +128,7 @@ const Messages = props => {
               </div>
               <div class="card-body contacts_body">
                 <ul class="contacts">
-                  {userList?.map(e => {
+                  {filterList?.map(e => {
                     return (
                       <li
                         class={e?.userName === activeUser?.userName ? 'active' : ''}
