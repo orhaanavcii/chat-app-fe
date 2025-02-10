@@ -1,8 +1,8 @@
 import { act } from 'react';
 import { useEffect, useState } from 'react';
-import { Client } from '@stomp/stompjs';
 import { messageHistory } from 'src/services/MessageServices';
 import axios from '../../components/api';
+import useWebSocket from './useWebSoket';
 
 const Messages = props => {
   const [userList, setUserList] = useState();
@@ -14,7 +14,9 @@ const Messages = props => {
   const [filter, setFilter] = useState();
   const [filterList, setFilterList] = useState();
   const [messageText, setMessageText] = useState();
-  const [userMessageList, setUserMassageList] = useState();
+  const userName = sessionStorage.getItem('userName');
+  const brokerUrl = 'ws://localhost:8080/ws'; // WebSocket sunucu adresi
+  const { userMessageList, setUserMassageList, sendMessage } = useWebSocket(brokerUrl, userName, activeUser);
 
   useEffect(() => {
     if (filter) {
@@ -27,14 +29,10 @@ const Messages = props => {
   useEffect(() => {
     if (activeUser) {
       if (!userMessageList) {
-        axios.get('/message-history/' + activeUser?.userName).then(res => {
+        axios.get('/message-history/' + sessionStorage.getItem('userName')).then(res => {
           console.log(res, activeUser);
           setUserMassageList(res?.data?.find(e => e?.title === activeUser?.userName)?.messages);
         });
-
-        // messageHistory(sessionStorage.getItem('userName')).then(res => {
-        //   setUserMassageList(res?.data?.find(e => e?.title === activeUser?.userName)?.messages);
-        // });
       }
     }
   }, [userMessageList, activeUser]);
@@ -78,46 +76,6 @@ const Messages = props => {
         </div>
       </div>
     );
-  };
-
-  const brokerUrl = 'ws://localhost:8080/ws/websocket';
-
-  const client = new Client({
-    brokerURL: brokerUrl,
-    connectHeaders: {
-      username: sessionStorage.getItem('userName'),
-    },
-    onConnect: () => {
-      console.log('client a connected to chat !');
-      client.subscribe(`/user/${sessionStorage.getItem('userName')}/messages`, message => {
-        console.log('New message for client:', JSON.parse(message.body));
-        const tempData = userMessageList || [];
-        tempData.push(JSON.parse(message.body));
-        setUserMassageList(tempData);
-        // deliveredMessage(JSON.parse(message.body), sessionStorage.getItem('userName'));
-      });
-    },
-  });
-
-  client.activate();
-
-  const sendMessage = () => {
-    client.publish({
-      destination: '/app/chat.sendMessage',
-      body: JSON.stringify({
-        type: 'CHAT_MESSAGE',
-        payload: {
-          traceId: crypto.randomUUID(),
-          chatId: 1,
-          messageId: crypto.randomUUID(),
-          sender: sessionStorage.getItem('userName'),
-          receiver: activeUser.userName,
-          participants: [sessionStorage.getItem('userName'), activeUser.userName],
-          content: messageText,
-          type: 'CHAT_MESSAGE',
-        },
-      }),
-    });
   };
 
   return (
@@ -221,7 +179,7 @@ const Messages = props => {
                     onChange={e => setMessageText(e?.target.value)}
                   ></textarea>
                   <div class="input-group-append">
-                    <span class="input-group-text send_btn" onClick={() => sendMessage()}>
+                    <span class="input-group-text send_btn" onClick={() => sendMessage(messageText)}>
                       <i class="fas fa-location-arrow"></i>
                     </span>
                   </div>
