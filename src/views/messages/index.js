@@ -1,6 +1,7 @@
 import { act } from 'react';
 import { useEffect, useState, useRef } from 'react';
 import useWebSocket from './useWebSoket';
+import axios from '../../components/api';
 
 const Messages = props => {
   const [userList, setUserList] = useState();
@@ -14,13 +15,21 @@ const Messages = props => {
   const [messageText, setMessageText] = useState();
   const userName = sessionStorage.getItem('userName');
   const brokerUrl = 'ws://localhost:8080/ws/websocket'; // WebSocket sunucu adresi
-  const { userMessageList, setUserMassageList, sendMessage } = useWebSocket(brokerUrl, userName, activeUser);
+  const [userMessageList, setUserMassageList] = useState();
+
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-
+  const { sendMessage } = useWebSocket(
+    brokerUrl,
+    userName,
+    activeUser,
+    setUserMassageList,
+    userMessageList,
+    scrollToBottom,
+  );
   useEffect(() => {
     if (filter) {
       setFilterList(userList?.filter(e => e?.name?.toLowerCase()?.includes(filter?.toString()?.toLowerCase())));
@@ -31,18 +40,14 @@ const Messages = props => {
 
   useEffect(() => {
     if (!userList) {
-      setUserList([
+      const tempList = [
         { name: 'Harun Acar', userName: 'hacar', icon: 'fa-solid fa-user-doctor' },
         { name: 'Orhan Avcı', userName: 'oavci', icon: 'fa-solid fa-user-ninja' },
         { name: 'Emre Altınayar', userName: 'ealtinayar', icon: 'fa-solid fa-user-gear' },
         { name: 'Enes Döngez', userName: 'edongez', icon: 'fa-solid fa-user-astronaut' },
-      ]);
-      setFilterList([
-        { name: 'Harun Acar', userName: 'hacar', icon: 'fa-solid fa-user-doctor' },
-        { name: 'Orhan Avcı', userName: 'oavci', icon: 'fa-solid fa-user-ninja' },
-        { name: 'Emre Altınayar', userName: 'ealtinayar', icon: 'fa-solid fa-user-gear' },
-        { name: 'Enes Döngez', userName: 'edongez', icon: 'fa-solid fa-user-astronaut' },
-      ]);
+      ];
+      setUserList(tempList);
+      setFilterList(tempList);
     }
   }, []);
 
@@ -71,9 +76,25 @@ const Messages = props => {
   };
 
   useEffect(() => {
-    setUserMassageList(null);
-    scrollToBottom();
+    if (activeUser) {
+      if (!userMessageList) {
+        axios.get('/message-history/' + sessionStorage.getItem('userName')).then(res => {
+          setUserMassageList(res?.data?.data?.find(e => e?.title === activeUser?.userName)?.messages);
+          scrollToBottom();
+        });
+      }
+    }
   }, [activeUser]);
+
+  useEffect(() => {
+    setUserMassageList(null);
+  }, [activeUser]);
+
+  useEffect(() => {
+    if (userMessageList) {
+      scrollToBottom();
+    }
+  }, [userMessageList]);
 
   return (
     <div className="maincontainer">
@@ -175,13 +196,14 @@ const Messages = props => {
                     class="form-control type_msg"
                     placeholder="Type your message..."
                     onChange={e => setMessageText(e?.target.value)}
-                    value={messageText}
+                    value={messageText || ''}
                   ></textarea>
                   <div class="input-group-append">
                     <span
                       class="input-group-text send_btn"
                       onClick={() => {
                         sendMessage(messageText);
+                        setMessageText('');
                         scrollToBottom();
                       }}
                     >

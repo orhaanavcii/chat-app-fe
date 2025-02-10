@@ -1,20 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
-import axios from '../../components/api';
 
-const useWebSocket = (brokerUrl, userName, activeUser) => {
+const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userMessageList, scrollToBottom) => {
   const stompClientRef = useRef(null);
-  const [userMessageList, setUserMassageList] = useState([]);
-
-  useEffect(() => {
-    if (activeUser) {
-      if (!userMessageList) {
-        axios.get('/message-history/' + sessionStorage.getItem('userName')).then(res => {
-          setUserMassageList(res?.data?.data?.find(e => e?.title === activeUser?.userName)?.messages);
-        });
-      }
-    }
-  }, [userMessageList, activeUser]);
+  const [newMessage, setNewMessage] = useState('');
 
   useEffect(() => {
     if (!stompClientRef.current) {
@@ -25,15 +14,6 @@ const useWebSocket = (brokerUrl, userName, activeUser) => {
         },
         onConnect: () => {
           console.log('Connected to chat!');
-
-          client.subscribe(`/user/${userName}/messages`, message => {
-            console.log('New message received:', message.body);
-            if (userMessageList?.length > 0) {
-              setUserMassageList(prevMessages => [...prevMessages, JSON.parse(message.body)]);
-            } else {
-              setUserMassageList([JSON.parse(message.body)]);
-            }
-          });
         },
       });
 
@@ -48,6 +28,28 @@ const useWebSocket = (brokerUrl, userName, activeUser) => {
       }
     };
   }, [brokerUrl, userName]);
+
+  useEffect(() => {
+    if (stompClientRef?.current && stompClientRef?.current?.connected) {
+      stompClientRef?.current.subscribe(`/user/${userName}/messages`, message => {
+        setNewMessage(message.body);
+      });
+    }
+  }, [stompClientRef?.current?.connected]);
+
+  useEffect(() => {
+    if (newMessage) {
+      if (userMessageList?.length > 0) {
+        const tempList = [...userMessageList];
+        tempList.push(JSON.parse(newMessage));
+        console.log(tempList, JSON.parse(newMessage));
+        setUserMassageList(tempList);
+      } else {
+        setUserMassageList([JSON.parse(newMessage)]);
+      }
+      scrollToBottom();
+    }
+  }, [newMessage]);
 
   const sendMessage = messageText => {
     if (stompClientRef.current && stompClientRef.current.connected) {
