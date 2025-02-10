@@ -2,6 +2,7 @@ import { act } from 'react';
 import { useEffect, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 import { messageHistory } from 'src/services/MessageServices';
+import axios from '../../components/api';
 
 const Messages = props => {
   const [userList, setUserList] = useState();
@@ -24,17 +25,19 @@ const Messages = props => {
   }, [filter]);
 
   useEffect(() => {
-    if (!userMessageList) {
-      console.log(
-        messageHistory(sessionStorage.getItem('userName')).then(res => {
-          return res;
-        }),
-      );
-      // messageHistory(sessionStorage.getItem('userName')).then(res => {
-      //   setUserMassageList(res?.data?.find(e => e?.title === activeUser?.userName)?.messages);
-      // });
+    if (activeUser) {
+      if (!userMessageList) {
+        axios.get('/message-history/' + user).then(res => {
+          console.log(res, activeUser);
+          setUserMassageList(res?.data?.find(e => e?.title === activeUser?.userName)?.messages);
+        });
+
+        // messageHistory(sessionStorage.getItem('userName')).then(res => {
+        //   setUserMassageList(res?.data?.find(e => e?.title === activeUser?.userName)?.messages);
+        // });
+      }
     }
-  }, [userMessageList]);
+  }, [userMessageList, activeUser]);
 
   useEffect(() => {
     if (!userList) {
