@@ -30,13 +30,13 @@ const Messages = props => {
     userMessageList,
     scrollToBottom,
   );
-  useEffect(() => {
+  /*useEffect(() => {
     if (filter) {
       setFilterList(userList?.filter(e => e?.name?.toLowerCase()?.includes(filter?.toString()?.toLowerCase())));
     } else {
       setFilterList(userList);
     }
-  }, [filter]);
+  }, [filter]);  */
 
   useEffect(() => {
     if (!userList) {
@@ -45,13 +45,15 @@ const Messages = props => {
         { name: 'Orhan Avcı', userName: 'oavci', icon: 'fa-solid fa-user-ninja' },
         { name: 'Emre Altınayar', userName: 'ealtinayar', icon: 'fa-solid fa-user-gear' },
         { name: 'Enes Döngez', userName: 'edongez', icon: 'fa-solid fa-user-astronaut' },
-      ]
-        ?.filter(e => e?.userName !== sessionStorage.getItem('userName'))
-        .map(x => {
-          return x;
-        });
+      ];
       setUserList(tempList);
-      setFilterList(tempList);
+      setFilterList(
+        tempList
+          ?.filter(e => e?.userName !== sessionStorage.getItem('userName'))
+          .map(x => {
+            return x;
+          }),
+      );
     }
   }, []);
 
@@ -176,7 +178,7 @@ const Messages = props => {
                 {userMessageList?.map(e => {
                   if (e?.sender === sessionStorage.getItem('userName')) {
                     return outMessageTemp(
-                      userList?.find(x => x?.userName === e?.sender),
+                      userList?.find(x => x?.userName === e?.receiver),
                       e?.content,
                     );
                   } else {

@@ -31,9 +31,47 @@ const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userM
 
   useEffect(() => {
     if (stompClientRef?.current && stompClientRef?.current?.connected) {
-      stompClientRef?.current.subscribe(`/user/${userName}/messages`, message => {
-        setNewMessage(message.body);
+      const mainRoute = `/user/${userName}/messages`;
+      stompClientRef?.current.subscribe(mainRoute, message => {
+        const { type } = JSON.parse(message.body);
+        console.log(type);
+        if (type === 'CHAT_MESSAGE') {
+          setNewMessage(message.body);
+          messageReceived(message);
+        }
+        if (type === 'FETCH_REGISTRY_RESPONSE') {
+          const { channelRoutes } = JSON.parse(message.body);
+          console.log('channelRoutes routes : ' + channelRoutes);
+          channelRoutes
+            .filter(channelRoute => channelRoute.route == !mainRoute) //isBased değilse ile değiştirilecek
+            .map(channelRoute => {
+              stompClientRef?.current.subscribe(channelRoute.route, message => {
+                if (type === 'CHAT_MESSAGE') {
+                  setNewMessage(message.body);
+                  messageReceived(message);
+                  console.log('new message from ' + route + ' message : ', JSON.parse(message.body));
+                }
+              });
+              joinMessage(userName, channelRoute.channelId, channelRoute.route, false);
+              console.log('subscribed by registry message. route : ' + route);
+            });
+        }
+        if (type === 'INVITE_CHANNEL') {
+          const { channelId, route } = JSON.parse(message.body);
+          console.log(channelId, route, 'helele');
+          stompClientRef?.current.subscribe(route, message => {
+            if (type === 'CHAT_MESSAGE') {
+              setNewMessage(message.body);
+              messageReceived(message);
+              console.log('new message from ' + route + ' message : ', JSON.parse(message.body));
+            }
+          });
+          joinMessage(userName, channelId, route, false);
+          console.log('subscribed by registry message. route : ' + route);
+        }
       });
+      joinMessage(userName, null, mainRoute, true);
+      sendFetchRegistryRequest(userName);
     }
   }, [stompClientRef?.current?.connected]);
 
@@ -53,6 +91,14 @@ const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userM
 
   const sendMessage = messageText => {
     if (stompClientRef.current && stompClientRef.current.connected) {
+      if (userMessageList?.length > 0) {
+        const tempList = [...userMessageList];
+        tempList.push({ content: messageText, sender: userName });
+        console.log(tempList, messageText);
+        setUserMassageList(tempList);
+      } else {
+        setUserMassageList([{ content: messageText, sender: userName }]);
+      }
       stompClientRef.current.publish({
         destination: '/app/chat.sendMessage',
         body: JSON.stringify({
@@ -72,6 +118,55 @@ const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userM
     } else {
       console.error('WebSocket is not connected.');
     }
+  };
+
+  const joinMessage = (username, channelRouteId, route, baseRoute) => {
+    stompClientRef.current.publish({
+      destination: '/app/chat.sendMessage',
+      body: JSON.stringify({
+        type: 'JOIN_CHANNEL',
+        payload: {
+          traceId: crypto.randomUUID(),
+          channelId: channelRouteId,
+          route: route,
+          sender: username,
+          baseRoute: baseRoute,
+          type: 'JOIN_CHANNEL',
+        },
+      }),
+    });
+  };
+
+  const sendFetchRegistryRequest = username => {
+    stompClientRef.current.publish({
+      destination: '/app/chat.sendMessage',
+      body: JSON.stringify({
+        type: 'FETCH_REGISTRY',
+        payload: {
+          traceId: crypto.randomUUID(),
+          sender: username,
+          type: 'FETCH_REGISTRY',
+        },
+      }),
+    });
+  };
+
+  const messageReceived = message => {
+    const { traceId, chatId, messageId, sender } = JSON.parse(message.body);
+    stompClientRef.current.publish({
+      destination: '/app/chat.sendMessage',
+      body: JSON.stringify({
+        type: 'CHAT_MESSAGE_DELIVERED',
+        payload: {
+          traceId: traceId,
+          sender: userName,
+          receiver: sender,
+          chatId: chatId,
+          messageId: messageId,
+          type: 'CHAT_MESSAGE_DELIVERED',
+        },
+      }),
+    });
   };
 
   return { userMessageList, setUserMassageList, sendMessage };
