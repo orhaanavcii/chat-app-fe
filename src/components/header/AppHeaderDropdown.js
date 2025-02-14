@@ -22,12 +22,12 @@ const AppHeaderDropdown = () => {
       <div>
         <CDropdown variant="nav-item">
           <CDropdownToggle placement="bottom-end" className="py-0" caret={false}>
-            <div id="profileImage">AA</div>
+            <div id="profileImage">{sessionStorage.getItem('userName')[0]?.toUpperCase() + sessionStorage.getItem('userName')[1]?.toUpperCase()}</div>
           </CDropdownToggle>
           <CDropdownMenu className="pt-0" placement="bottom-end">
             <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'center', marginBottom: '10px' }}>
               <div id="profileImage" style={{ margin: '12px auto 5px auto' }}>
-                {'AA'}
+                {sessionStorage.getItem('userName')[0]?.toUpperCase() + sessionStorage.getItem('userName')[1]?.toUpperCase()}
               </div>
               <div style={{ fontSize: '12px', fontWeight: 'bold ' }}>{sessionStorage.getItem('userName')}</div>
               <div style={{ fontSize: '12px' }}>{sessionStorage.getItem('userName')}</div>

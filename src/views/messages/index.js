@@ -16,7 +16,7 @@ const Messages = props => {
   const userName = sessionStorage.getItem('userName');
   const brokerUrl = 'ws://localhost:8080/ws/websocket'; // WebSocket sunucu adresi
   const [userMessageList, setUserMassageList] = useState();
-
+  const [notification, setNotification] = useState();
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -28,23 +28,17 @@ const Messages = props => {
     activeUser,
     setUserMassageList,
     userMessageList,
-    scrollToBottom,
+    scrollToBottom, notification, setNotification
   );
-  /*useEffect(() => {
-    if (filter) {
-      setFilterList(userList?.filter(e => e?.name?.toLowerCase()?.includes(filter?.toString()?.toLowerCase())));
-    } else {
-      setFilterList(userList);
-    }
-  }, [filter]);  */
+  console.log(notification, "notify")
 
   useEffect(() => {
     if (!userList) {
       const tempList = [
-        { name: 'Harun Acar', userName: 'hacar', icon: 'fa-solid fa-user-doctor' },
-        { name: 'Orhan Avcı', userName: 'oavci', icon: 'fa-solid fa-user-ninja' },
-        { name: 'Emre Altınayar', userName: 'ealtinayar', icon: 'fa-solid fa-user-gear' },
-        { name: 'Enes Döngez', userName: 'edongez', icon: 'fa-solid fa-user-astronaut' },
+        { name: 'Harun Acar', userName: 'hacar', icon: 'fa-solid fa-user-doctor', count: 0 },
+        { name: 'Orhan Avcı', userName: 'oavci', icon: 'fa-solid fa-user-ninja', count: 0 },
+        { name: 'Emre Altınayar', userName: 'ealtinayar', icon: 'fa-solid fa-user-gear', count: 0 },
+        { name: 'Enes Döngez', userName: 'edongez', icon: 'fa-solid fa-user-astronaut', count: 0 },
       ];
       setUserList(tempList);
       setFilterList(
@@ -102,6 +96,29 @@ const Messages = props => {
     }
   }, [userMessageList]);
 
+  useEffect(() => {
+    if (notification) {
+      setFilterList(filterList?.map((e) => {
+        const tempNot = notification?.find((x) => x?.user === e?.userName);
+        if (tempNot) { return { ...e, count: tempNot?.count } } else { return e }
+      }))
+    }
+  }, [notification])
+
+  useEffect(() => {
+    if (activeUser) {
+      if (notification) {
+        setFilterList(filterList?.map((e) => {
+          const tempNot = notification?.find((x) => x?.user === activeUser?.userName);
+          if (tempNot) {
+            setNotification(notification?.map((z) => z?.user === activeUser?.userName ? { ...z, count: 0 } : z))
+            return { ...e, count: 0 }
+          } else { return e }
+        }))
+      }
+    }
+  }, [activeUser])
+
   return (
     <div className="maincontainer">
       <div class="container-fluid h-50">
@@ -138,6 +155,10 @@ const Messages = props => {
                       >
                         <div>
                           <div class="d-flex bd-highlight">
+                            {e?.count ? <div style={{
+                              color: "yellow", background: "blue", borderRadius: 100,
+                              height: "25px", width: "25px", display: "flex", justifyContent: "center", position: "absolute", zIndex: 999, left: "-1px"
+                            }}>{e?.count}</div> : ""}
                             <div
                               class="img_cont"
                               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
@@ -178,12 +199,12 @@ const Messages = props => {
                 {userMessageList?.map(e => {
                   if (e?.sender === sessionStorage.getItem('userName')) {
                     return outMessageTemp(
-                      userList?.find(x => x?.userName === e?.receiver),
+                      userList?.find(x => x?.userName === sessionStorage.getItem('userName')),
                       e?.content,
                     );
                   } else {
                     return inMessageTemp(
-                      userList?.find(x => x?.userName === e?.receiver),
+                      userList?.find(x => x?.userName === e?.sender),
                       e?.content,
                     );
                   }
