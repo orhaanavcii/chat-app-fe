@@ -1,9 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 
-const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userMessageList, scrollToBottom) => {
+const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userMessageList, scrollToBottom, notification, setNotification) => {
   const stompClientRef = useRef(null);
   const [newMessage, setNewMessage] = useState('');
+  const [newNotification, setNewNotification] = useState('');
+
+  useEffect(() => {
+    stompClientRef.current?.deactivate();
+    stompClientRef.current = null;
+  }, [userName])
 
   useEffect(() => {
     if (!stompClientRef.current) {
@@ -16,11 +22,9 @@ const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userM
           console.log('Connected to chat!');
         },
       });
-
       client.activate();
       stompClientRef.current = client;
     }
-
     return () => {
       if (stompClientRef.current) {
         stompClientRef.current.deactivate();
@@ -33,11 +37,15 @@ const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userM
     if (stompClientRef?.current && stompClientRef?.current?.connected) {
       const mainRoute = `/user/${userName}/messages`;
       stompClientRef?.current.subscribe(mainRoute, message => {
-        const { type } = JSON.parse(message.body);
-        console.log(type);
+        const { type, sender, content } = JSON.parse(message.body);
+        console.log(JSON.parse(message.body), userName), activeUser;
         if (type === 'CHAT_MESSAGE') {
-          setNewMessage(message.body);
-          messageReceived(message);
+          if (sender === activeUser) {
+            setNewMessage(message.body);
+            messageReceived(message);
+          } else {
+            setNewNotification({ user: sender })
+          }
         }
         /*       if (type === 'FETCH_REGISTRY_RESPONSE') {
           const { channelRoutes } = JSON.parse(message.body);
@@ -78,7 +86,8 @@ const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userM
       if (userMessageList?.length > 0) {
         const tempList = [...userMessageList];
         tempList.push(JSON.parse(newMessage));
-        console.log(tempList, JSON.parse(newMessage));
+
+        console.log(tempList, JSON.parse(newMessage), "bir");
         setUserMassageList(tempList);
       } else {
         setUserMassageList([JSON.parse(newMessage)]);
@@ -86,6 +95,18 @@ const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userM
       scrollToBottom();
     }
   }, [newMessage]);
+
+  useEffect(() => {
+    if (newNotification) {
+      if (notification?.find((e) => newNotification?.user === e?.user)) {
+        setNotification(notification?.map((e) => e?.user === newNotification?.user ? { ...e, count: e?.count + 1 } : e))
+      } else {
+        const tempNot=notification?[...notification]:[]
+        tempNot.push({ user: newNotification?.user, count: 1 })
+        setNotification(tempNot)
+      }
+    }
+  }, [newNotification])
 
   const sendMessage = messageText => {
     if (stompClientRef.current && stompClientRef.current.connected) {
