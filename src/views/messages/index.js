@@ -17,6 +17,7 @@ const Messages = props => {
   const brokerUrl = 'ws://localhost:8080/ws/websocket'; // WebSocket sunucu adresi
   const [userMessageList, setUserMassageList] = useState();
   const [notification, setNotification] = useState();
+  const [addUserList, setAddUserList] = useState();
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -28,8 +29,15 @@ const Messages = props => {
     activeUser,
     setUserMassageList,
     userMessageList,
-    scrollToBottom, notification, setNotification
+    scrollToBottom, notification, setNotification,setAddUserList,addUserList
   );
+
+  useEffect(()=>{
+    if(addUserList){
+      setFilterList([...filterList,{ name: addUserList?.channelName, userName: addUserList?.channelId, icon: 'fa-solid fa-user', count: 0 }])
+      console.log(addUserList,"add")
+    }
+  },[addUserList])
 
   useEffect(() => {
     if (!userList) {
