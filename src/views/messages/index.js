@@ -22,7 +22,7 @@ const Messages = props => {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
-  const { sendMessage } = useWebSocket(
+  const { sendMessage, addGroup } = useWebSocket(
     brokerUrl,
     userName,
     activeUser,
@@ -30,7 +30,6 @@ const Messages = props => {
     userMessageList,
     scrollToBottom, notification, setNotification
   );
-  console.log(notification, "notify")
 
   useEffect(() => {
     if (!userList) {
@@ -79,7 +78,12 @@ const Messages = props => {
     if (activeUser) {
       if (!userMessageList) {
         axios.get('/message-history/' + sessionStorage.getItem('userName')).then(res => {
-          setUserMassageList(res?.data?.data?.find(e => e?.title === activeUser?.userName)?.messages);
+          const tempMessage = res.data?.data?.find((e) => {
+            if (e?.participants?.find((x) => x?.username === (activeUser?.userName))) {
+              return e
+            }
+          })
+          setUserMassageList(tempMessage?.messages);
           scrollToBottom();
         });
       }
@@ -121,6 +125,30 @@ const Messages = props => {
 
   return (
     <div className="maincontainer">
+      <input type="button" onClick={() => addGroup(sessionStorage.getItem('userName'),{
+        channelName: "test grup", participants: [
+          {
+            "username": "edongez",
+            "permissions": [
+              "READ",
+              "WRITE"
+            ]
+          },
+          {
+            "username": "oavci",
+            "permissions": [
+              "READ",
+              "WRITE"
+            ]
+          },
+          {
+            "username": "hacar",
+            "permissions": [
+              "READ"
+            ]
+          }
+        ]
+      })} value="grup ekle" />
       <div class="container-fluid h-50">
         <div class="row justify-content-center h-100">
           <div class="col-md-4 col-xl-3 chat">
@@ -196,16 +224,16 @@ const Messages = props => {
                 </div>
               </div>
               <div class="card-body msg_card_body">
-                {userMessageList?.map(e => {
-                  if (e?.sender === sessionStorage.getItem('userName')) {
+                {userMessageList?.sort((a, b) => a?.messages?.sendTime > b?.messages?.sendTime)?.map(e => {
+                  if (e?.message?.sender === sessionStorage.getItem('userName')) {
                     return outMessageTemp(
                       userList?.find(x => x?.userName === sessionStorage.getItem('userName')),
-                      e?.content,
+                      e?.message?.content,
                     );
                   } else {
                     return inMessageTemp(
-                      userList?.find(x => x?.userName === e?.sender),
-                      e?.content,
+                      userList?.find(x => x?.userName === e?.message?.sender),
+                      e?.message?.content,
                     );
                   }
                 })}
@@ -229,7 +257,7 @@ const Messages = props => {
                     <span
                       class="input-group-text send_btn"
                       onClick={() => {
-                        sendMessage(messageText);
+                        sendMessage(messageText, sessionStorage.getItem('userName'));
                         setMessageText('');
                         scrollToBottom();
                       }}

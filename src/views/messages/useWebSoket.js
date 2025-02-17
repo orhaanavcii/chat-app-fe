@@ -32,18 +32,21 @@ const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userM
       }
     };
   }, [brokerUrl, userName]);
-
+  console.log("üç", activeUser)
   useEffect(() => {
     if (stompClientRef?.current && stompClientRef?.current?.connected) {
       const mainRoute = `/user/${userName}/messages`;
       stompClientRef?.current.subscribe(mainRoute, message => {
-        const { type, sender, content } = JSON.parse(message.body);
-        console.log(JSON.parse(message.body), userName), activeUser;
+        const { type, sender, content, sendTime } = JSON.parse(message.body);
+        console.log(type,content)
         if (type === 'CHAT_MESSAGE') {
-          if (sender === activeUser) {
-            setNewMessage(message.body);
+          console.log("iki", activeUser, sender)
+          if (sender === activeUser?.userName) {
+            setNewMessage({ message: { content: content, sender: activeUser?.userName, sendTime: sendTime } });
             messageReceived(message);
           } else {
+            setNewMessage({ message: { content: "", sender: activeUser?.userName, sendTime: sendTime } });
+
             setNewNotification({ user: sender })
           }
         }
@@ -66,7 +69,6 @@ const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userM
         } */
         if (type === 'INVITE_CHANNEL') {
           const { channelId, route } = JSON.parse(message.body);
-          console.log(channelId, route, 'helele');
           stompClientRef?.current.subscribe(route, message => {
             if (type === 'CHAT_MESSAGE') {
               setNewMessage(message.body);
@@ -79,44 +81,41 @@ const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userM
       });
       sendFetchRegistryRequest(userName);
     }
-  }, [stompClientRef?.current?.connected]);
+  }, [stompClientRef?.current?.connected, activeUser]);
 
   useEffect(() => {
     if (newMessage) {
       if (userMessageList?.length > 0) {
         const tempList = [...userMessageList];
-        tempList.push(JSON.parse(newMessage));
-
-        console.log(tempList, JSON.parse(newMessage), "bir");
+        tempList.push(newMessage);
         setUserMassageList(tempList);
       } else {
-        setUserMassageList([JSON.parse(newMessage)]);
+        setUserMassageList([newMessage]);
       }
       scrollToBottom();
     }
-  }, [newMessage]);
+  }, [newMessage, activeUser]);
 
   useEffect(() => {
     if (newNotification) {
       if (notification?.find((e) => newNotification?.user === e?.user)) {
         setNotification(notification?.map((e) => e?.user === newNotification?.user ? { ...e, count: e?.count + 1 } : e))
       } else {
-        const tempNot=notification?[...notification]:[]
+        const tempNot = notification ? [...notification] : []
         tempNot.push({ user: newNotification?.user, count: 1 })
         setNotification(tempNot)
       }
     }
   }, [newNotification])
 
-  const sendMessage = messageText => {
+  const sendMessage = (messageText, gUserName) => {
     if (stompClientRef.current && stompClientRef.current.connected) {
       if (userMessageList?.length > 0) {
         const tempList = [...userMessageList];
-        tempList.push({ content: messageText, sender: userName });
-        console.log(tempList, messageText);
+        tempList.push({ message: { content: messageText, sender: gUserName } });
         setUserMassageList(tempList);
       } else {
-        setUserMassageList([{ content: messageText, sender: userName }]);
+        setUserMassageList([{ message: { content: messageText, sender: gUserName } }]);
       }
       stompClientRef.current.publish({
         destination: '/app/chat.sendMessage',
@@ -126,7 +125,7 @@ const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userM
             traceId: crypto.randomUUID(),
             chatId: 1,
             messageId: crypto.randomUUID(),
-            sender: userName,
+            sender: gUserName,
             receiver: activeUser.userName,
             sendTime: new Date(),
             content: messageText,
@@ -138,6 +137,24 @@ const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userM
       console.error('WebSocket is not connected.');
     }
   };
+
+  const addGroup = (gUserName,data) => {
+    stompClientRef.current.publish({
+      destination: '/app/chat.sendMessage',
+      body: JSON.stringify({
+        type: 'CREATE_CHANNEL_REQUEST',
+        payload: {
+          traceId: crypto.randomUUID(),
+          messageId: crypto.randomUUID(),
+          sender: gUserName,
+          isGroup:true,
+          channelName:data?.channelName,
+          invitees:data?.participants,
+          type: 'CREATE_CHANNEL_REQUEST',
+        },
+      }),
+    });
+  }
 
   const sendFetchRegistryRequest = username => {
     stompClientRef.current.publish({
@@ -171,7 +188,7 @@ const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userM
     });
   };
 
-  return { userMessageList, setUserMassageList, sendMessage };
+  return { userMessageList, setUserMassageList, sendMessage, addGroup };
 };
 
 export default useWebSocket;
