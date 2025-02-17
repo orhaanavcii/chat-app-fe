@@ -39,7 +39,7 @@ const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userM
           setNewMessage(message.body);
           messageReceived(message);
         }
-        if (type === 'FETCH_REGISTRY_RESPONSE') {
+        /*       if (type === 'FETCH_REGISTRY_RESPONSE') {
           const { channelRoutes } = JSON.parse(message.body);
           console.log('channelRoutes routes : ' + channelRoutes);
           channelRoutes
@@ -55,7 +55,7 @@ const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userM
               joinMessage(userName, channelRoute.channelId, channelRoute.route, false);
               console.log('subscribed by registry message. route : ' + route);
             });
-        }
+        } */
         if (type === 'INVITE_CHANNEL') {
           const { channelId, route } = JSON.parse(message.body);
           console.log(channelId, route, 'helele');
@@ -66,11 +66,9 @@ const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userM
               console.log('new message from ' + route + ' message : ', JSON.parse(message.body));
             }
           });
-          joinMessage(userName, channelId, route, false);
           console.log('subscribed by registry message. route : ' + route);
         }
       });
-      joinMessage(userName, null, mainRoute, true);
       sendFetchRegistryRequest(userName);
     }
   }, [stompClientRef?.current?.connected]);
@@ -109,7 +107,7 @@ const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userM
             messageId: crypto.randomUUID(),
             sender: userName,
             receiver: activeUser.userName,
-            participants: [userName, activeUser.userName],
+            sendTime: new Date(),
             content: messageText,
             type: 'CHAT_MESSAGE',
           },
@@ -118,23 +116,6 @@ const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userM
     } else {
       console.error('WebSocket is not connected.');
     }
-  };
-
-  const joinMessage = (username, channelRouteId, route, baseRoute) => {
-    stompClientRef.current.publish({
-      destination: '/app/chat.sendMessage',
-      body: JSON.stringify({
-        type: 'JOIN_CHANNEL',
-        payload: {
-          traceId: crypto.randomUUID(),
-          channelId: channelRouteId,
-          route: route,
-          sender: username,
-          baseRoute: baseRoute,
-          type: 'JOIN_CHANNEL',
-        },
-      }),
-    });
   };
 
   const sendFetchRegistryRequest = username => {
@@ -161,8 +142,8 @@ const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userM
           traceId: traceId,
           sender: userName,
           receiver: sender,
-          chatId: chatId,
           messageId: messageId,
+          deliveredTime: new Date(),
           type: 'CHAT_MESSAGE_DELIVERED',
         },
       }),
