@@ -1,18 +1,26 @@
 import { useEffect, useRef, useState } from 'react';
 import { Client } from '@stomp/stompjs';
 
-const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userMessageList, scrollToBottom, notification, setNotification,setAddUserList,addUserList) => {
+const useWebSocket = (
+  brokerUrl,
+  userName,
+  activeUser,
+  setUserMassageList,
+  userMessageList,
+  scrollToBottom,
+  notification,
+  setNotification,
+  setAddUserList,
+  addUserList,
+  messageStatus,
+) => {
   const stompClientRef = useRef(null);
   const [newMessage, setNewMessage] = useState('');
   const [newNotification, setNewNotification] = useState('');
+  const [tempActiveUser, setTempActiveUser] = useState(activeUser);
 
   useEffect(() => {
-    stompClientRef.current?.deactivate();
-    stompClientRef.current = null;
-  }, [userName])
-
-  useEffect(() => {
-    if (!stompClientRef.current) {
+    if (!stompClientRef?.current?.connected) {
       const client = new Client({
         brokerURL: brokerUrl,
         connectHeaders: {
@@ -23,63 +31,48 @@ const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userM
         },
       });
       client.activate();
-      stompClientRef.current = client;
+      stompClientRef.current = client ? client : undefined;
     }
-    return () => {
-      if (stompClientRef.current) {
-        stompClientRef.current.deactivate();
-        stompClientRef.current = null;
-      }
-    };
-  }, [brokerUrl, userName]);
+  }, [stompClientRef?.current?.connected]);
 
   useEffect(() => {
     if (stompClientRef?.current && stompClientRef?.current?.connected) {
       const mainRoute = `/user/${userName}/messages`;
       stompClientRef?.current.subscribe(mainRoute, message => {
-        const { type, sender, content, sendTime } = JSON.parse(message.body);
-        console.log(type, content)
+        const { type, sender, content, sendTime, receiver } = JSON.parse(message.body);
+        console.log(type, sender, content, receiver, 'main');
         if (type === 'CHAT_MESSAGE') {
-          if (sender === activeUser?.userName) {
-            setNewMessage({ message: { content: content, sender: activeUser?.userName, sendTime: sendTime } });
-            messageReceived(message);
-          } else {
-            setNewMessage({ message: { content: "", sender: activeUser?.userName, sendTime: sendTime } });
-
-            setNewNotification({ user: sender })
-          }
+          messageStatus({ message: { content: content, sendTime: sendTime } }, { user: sender }, 'main');
+          messageReceived(content);
         }
-        // if (type === 'FETCH_REGISTRY_RESPONSE') {
-        //   const { channelRoutes } = JSON.parse(message.body);
-        //   console.log('channelRoutes routes : ' + channelRoutes);
-        //   channelRoutes
-        //     .filter(channelRoute => channelRoute.route == !mainRoute) //isBased değilse ile değiştirilecek
-        //     .map(channelRoute => {
-        //       stompClientRef?.current.subscribe(channelRoute.route, message => {
-        //         if (type === 'CHAT_MESSAGE') {
-        //           setNewMessage(message.body);
-        //           messageReceived(message);
-        //           console.log('new message from ' + route + ' message : ', JSON.parse(message.body));
-        //         }
-        //       });
-        //       joinMessage(userName, channelRoute.channelId, channelRoute.route, false);
-        //       console.log('subscribed by registry message. route : ' + route);
-        //     });
-        // }
+        if (type === 'FETCH_REGISTRY_RESPONSE') {
+          const subscriptions = JSON.parse(message.body)?.subscriptions;
+          subscriptions
+            .filter(subscription => subscription.channel.route !== mainRoute) //isBased değilse ile değiştirilecek
+            .map(subscription => {
+              stompClientRef?.current.subscribe(subscription.channel.route, messageSubscribe => {
+                const { type, sender, content, sendTime, receiver } = JSON.parse(messageSubscribe.body);
+                console.log(receiver, activeUser, sender, 'sub');
+                if (type === 'CHAT_MESSAGE') {
+                  messageStatus({ message: { content: content, sendTime: sendTime } }, { user: receiver }, 'sub');
+                  messageReceived(content);
+                }
+              });
+            });
+        }
         if (type === 'INVITE_CHANNEL') {
           const { channelId, route } = JSON.parse(message.body);
-          console.log(JSON.parse(message.body),channelId)
-          setAddUserList(JSON.parse(message.body))
-          stompClientRef?.current.subscribe(route, message => {
+          setAddUserList(JSON.parse(message.body));
+          stompClientRef?.current.subscribe(route, messageGroup => {
+            const { type, sender, content, sendTime, receiver } = JSON.parse(messageGroup.body);
+            console.log(type, sender, content, JSON.parse(messageGroup.body), 'invite channel');
             if (type === 'CHAT_MESSAGE') {
-              if (sender === activeUser?.userName) {
-                setNewMessage({ message: { content: content, sender: activeUser?.userName, sendTime: sendTime } });
-                messageReceived(message);
-              } else {
-                setNewMessage({ message: { content: "", sender: activeUser?.userName, sendTime: sendTime } });
-    
-                setNewNotification({ user: sender })
-              }
+              messageStatus(
+                { message: { content: content, sendTime: sendTime } },
+                { user: receiver, sender: sender },
+                'invitechannel',
+              );
+              messageReceived(content);
             }
           });
           console.log('subscribed by registry message. route : ' + route);
@@ -87,41 +80,18 @@ const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userM
       });
       sendFetchRegistryRequest(userName);
     }
-  }, [stompClientRef?.current?.connected, activeUser]);
+  }, [stompClientRef?.current?.connected]);
 
-  useEffect(() => {
-    if (newMessage) {
-      if (userMessageList?.length > 0) {
-        const tempList = [...userMessageList];
-        tempList.push(newMessage);
-        setUserMassageList(tempList);
-      } else {
-        setUserMassageList([newMessage]);
-      }
-      scrollToBottom();
-    }
-  }, [newMessage, activeUser]);
-
-  useEffect(() => {
-    if (newNotification) {
-      if (notification?.find((e) => newNotification?.user === e?.user)) {
-        setNotification(notification?.map((e) => e?.user === newNotification?.user ? { ...e, count: e?.count + 1 } : e))
-      } else {
-        const tempNot = notification ? [...notification] : []
-        tempNot.push({ user: newNotification?.user, count: 1 })
-        setNotification(tempNot)
-      }
-    }
-  }, [newNotification])
-
-  const sendMessage = (messageText, gUserName) => {
+  const sendMessage = (messageText, gUserName, isGroup) => {
     if (stompClientRef.current && stompClientRef.current.connected) {
-      if (userMessageList?.length > 0) {
-        const tempList = [...userMessageList];
-        tempList.push({ message: { content: messageText, sender: gUserName } });
-        setUserMassageList(tempList);
-      } else {
-        setUserMassageList([{ message: { content: messageText, sender: gUserName } }]);
+      if (!isGroup) {
+        if (userMessageList?.length > 0) {
+          const tempList = [...userMessageList];
+          tempList.push({ message: { content: messageText, sender: gUserName } });
+          setUserMassageList(tempList);
+        } else {
+          setUserMassageList([{ message: { content: messageText, sender: gUserName } }]);
+        }
       }
       stompClientRef.current.publish({
         destination: '/app/chat.sendMessage',
@@ -129,11 +99,11 @@ const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userM
           type: 'CHAT_MESSAGE',
           payload: {
             traceId: crypto.randomUUID(),
-            isGroup:true,
+            isGroup: activeUser?.isGroup || false,
             chatId: 1,
             messageId: crypto.randomUUID(),
             sender: gUserName,
-            receiver: activeUser.userName,
+            receiver: activeUser?.isGroup ? activeUser.groupId : activeUser.userName,
             sendTime: new Date(),
             content: messageText,
             type: 'CHAT_MESSAGE',
@@ -161,7 +131,7 @@ const useWebSocket = (brokerUrl, userName, activeUser, setUserMassageList, userM
         },
       }),
     });
-  }
+  };
 
   const sendFetchRegistryRequest = username => {
     stompClientRef.current.publish({
