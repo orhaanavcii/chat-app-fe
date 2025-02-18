@@ -357,7 +357,7 @@ const Messages = props => {
                                   width: '25px',
                                   display: 'flex',
                                   justifyContent: 'center',
-                                  position: 'absolute',
+                                  position: 'relative',
                                   zIndex: 999,
                                   left: '-1px',
                                 }}
