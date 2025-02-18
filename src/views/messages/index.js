@@ -58,17 +58,26 @@ const Messages = props => {
             tempList.push({
               ...newMessage,
               sender: activeUser?.isGroup
-                ? type === 'invitechannel'
+                ? type === 'invitechannel' || type === 'sub'
                   ? newNotification?.sender === sessionStorage.getItem('userName')
                     ? sessionStorage.getItem('userName')
-                    : activeUser?.groupId
+                    : newNotification?.sender
                   : activeUser?.groupId
                 : activeUser?.userName,
             });
             setUserMassageList(tempList);
           } else {
             setUserMassageList([
-              { ...newMessage, sender: activeUser?.isGroup ? activeUser?.groupId : activeUser?.userName },
+              {
+                ...newMessage,
+                sender: activeUser?.isGroup
+                  ? type === 'invitechannel' || type === 'sub'
+                    ? newNotification?.sender === sessionStorage.getItem('userName')
+                      ? sessionStorage.getItem('userName')
+                      : newNotification?.sender
+                    : activeUser?.groupId
+                  : activeUser?.userName,
+              },
             ]);
           }
           scrollToBottom();
@@ -142,7 +151,6 @@ const Messages = props => {
   // }, []);
 
   const inMessageTemp = (user, message) => {
-    console.log(user,"in")
     return (
       <div class="d-flex justify-content-start mb-4" style={{ display: 'flex' }}>
         <div class="img_cont" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -272,7 +280,7 @@ const Messages = props => {
       }
     }
   }, [activeUser]);
-console.log(userMessageList,"userMessageList",userList)
+
   return (
     <div className="maincontainer">
       <input

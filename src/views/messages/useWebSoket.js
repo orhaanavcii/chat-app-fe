@@ -43,7 +43,7 @@ const useWebSocket = (
         console.log(type, sender, content, receiver, 'main');
         if (type === 'CHAT_MESSAGE') {
           messageStatus({ message: { content: content, sendTime: sendTime } }, { user: sender }, 'main');
-          messageReceived(content);
+          messageReceived(message);
         }
         if (type === 'FETCH_REGISTRY_RESPONSE') {
           const subscriptions = JSON.parse(message.body)?.subscriptions;
@@ -54,8 +54,12 @@ const useWebSocket = (
                 const { type, sender, content, sendTime, receiver } = JSON.parse(messageSubscribe.body);
                 console.log(receiver, activeUser, sender, 'sub');
                 if (type === 'CHAT_MESSAGE') {
-                  messageStatus({ message: { content: content, sendTime: sendTime } }, { user: receiver }, 'sub');
-                  messageReceived(content);
+                  messageStatus(
+                    { message: { content: content, sendTime: sendTime } },
+                    { user: receiver, sender: sender },
+                    'sub',
+                  );
+                  messageReceived(messageSubscribe);
                 }
               });
             });
@@ -72,7 +76,7 @@ const useWebSocket = (
                 { user: receiver, sender: sender },
                 'invitechannel',
               );
-              messageReceived(content);
+              messageReceived(messageGroup);
             }
           });
           console.log('subscribed by registry message. route : ' + route);
