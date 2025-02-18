@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { BrowserRouter, Route, Switch } from 'react-router-dom';
 import './scss/style.scss';
 import PrivateRoute from './components/PrivateRoute';
+import 'primereact/resources/primereact.css';
 
 const loading = (
   <div className="pt-3 text-center">

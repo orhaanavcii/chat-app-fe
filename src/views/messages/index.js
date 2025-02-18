@@ -2,6 +2,10 @@ import { act } from 'react';
 import { useEffect, useState, useRef } from 'react';
 import useWebSocket from './useWebSoket';
 import axios from '../../components/api';
+import { CButton, CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle } from '@coreui/react';
+import { MultiSelect } from 'primereact/multiselect';
+import { InputText } from 'primereact/inputtext';
+import { Toast } from 'primereact/toast';
 
 const Messages = props => {
   const [userList, setUserList] = useState();
@@ -21,6 +25,12 @@ const Messages = props => {
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+  const [visible, setVisible] = useState(false);
+  const [groupName, setGroupName] = useState('');
+  const [selectUserList, setSelectUserList] = useState();
+  const [selectedUsers, setSelectedUsers] = useState(null);
+  const toast = useRef(null);
+
   const messageStatus = (message, reciever, type) => {
     console.log(message, reciever, 'üst');
     setNewMessage(message);
@@ -41,6 +51,26 @@ const Messages = props => {
     addUserList,
     messageStatus,
   );
+
+  useEffect(() => {
+    if (userList?.length > 0) {
+      setSelectUserList(
+        userList
+          ?.filter(e => !e?.groupId)
+          .map(x => {
+            return { name: x.userName };
+          }),
+      );
+    }
+  }, [userList]);
+
+  useEffect(() => {
+    if (filter) {
+      setFilterList(userList?.filter(e => e?.userName?.toLowerCase()?.includes(filter?.toString()?.toLowerCase())));
+    } else {
+      setFilterList(userList);
+    }
+  }, [filter]);
 
   useEffect(() => {
     if (activeUser) {
@@ -108,9 +138,19 @@ const Messages = props => {
 
   useEffect(() => {
     if (addUserList) {
-      console.log(addUserList, 'addUserList');
       setFilterList([
         ...filterList,
+        {
+          name: addUserList?.channelName,
+          userName: addUserList?.channelName,
+          icon: 'fa-solid fa-user',
+          count: 0,
+          isGroup: true,
+          groupId: addUserList?.channelId,
+        },
+      ]);
+      setUserList([
+        ...userList,
         {
           name: addUserList?.channelName,
           userName: addUserList?.channelName,
@@ -123,32 +163,6 @@ const Messages = props => {
       console.log(addUserList, 'add');
     }
   }, [addUserList]);
-
-  // useEffect(() => {
-  //   if (!userList) {
-  //     const tempList = [
-  //       { name: 'Harun Acar', userName: 'hacar', icon: 'fa-solid fa-user-doctor', count: 0 },
-  //       { name: 'Orhan Avcı', userName: 'oavci', icon: 'fa-solid fa-user-ninja', count: 0 },
-  //       { name: 'Emre Altınayar', userName: 'ealtinayar', icon: 'fa-solid fa-user-gear', count: 0 },
-  //       { name: 'Enes Döngez', userName: 'edongez', icon: 'fa-solid fa-user-astronaut', count: 0 },
-  //       {
-  //         name: 'group',
-  //         userName: 'a3e5bf15-8922-4adb-8e3f-c8607b127a56',
-  //         icon: 'fa-solid fa-user-astronaut',
-  //         count: 0,
-  //         isGroup: true,
-  //       },
-  //     ];
-  //     setUserList(tempList);
-  //     setFilterList(
-  //       tempList
-  //         ?.filter(e => e?.userName !== sessionStorage.getItem('userName'))
-  //         .map(x => {
-  //           return x;
-  //         }),
-  //     );
-  //   }
-  // }, []);
 
   const inMessageTemp = (user, message) => {
     return (
@@ -283,32 +297,10 @@ const Messages = props => {
 
   return (
     <div className="maincontainer">
-      <input
-        type="button"
-        onClick={() =>
-          addGroup(sessionStorage.getItem('userName'), {
-            channelName: 'test grup' + Math.floor(Math.random() * (100 - 1 + 1) + 1),
-            participants: [
-              {
-                username: 'edongez',
-                permissions: ['READ', 'WRITE'],
-              },
-              {
-                username: 'oavci',
-                permissions: ['READ', 'WRITE'],
-              },
-              {
-                username: 'hacar',
-                permissions: ['READ'],
-              },
-            ],
-          })
-        }
-        value="grup ekle"
-      />
+      <Toast ref={toast} />
       <div class="container-fluid h-50">
         <div class="row justify-content-center h-100">
-          <div class="col-md-4 col-xl-3 chat">
+          <div class="col-md-12 col-lg-4 col-xl-3 chat" style={{ marginBottom: 15 }}>
             <div class="card mb-sm-3 mb-md-0 contacts_card">
               <div class="card-header">
                 <div class="input-group">
@@ -322,6 +314,19 @@ const Messages = props => {
                   <div class="input-group-prepend">
                     <span class="input-group-text search_btn">
                       <i class="fas fa-search"></i>
+                    </span>
+                  </div>
+                  <div style={{ marginLeft: 15 }}>
+                    <span
+                      class="input-group-text send_btn"
+                      style={{ borderRadius: 0 }}
+                      onClick={() => {
+                        setGroupName('');
+                        setSelectedUsers(null);
+                        setVisible(true);
+                      }}
+                    >
+                      <i class="fa fa-plus-circle"></i>
                     </span>
                   </div>
                 </div>
@@ -388,7 +393,7 @@ const Messages = props => {
               <div class="card-footer"></div>
             </div>
           </div>
-          <div class="col-md-8 col-xl-6 chat">
+          <div class="col-md-12 col-lg-8 col-xl-6 chat">
             <div class="card">
               <div class="card-header msg_head">
                 <div class="d-flex bd-highlight">
@@ -453,6 +458,66 @@ const Messages = props => {
           </div>
         </div>
       </div>
+      <CModal visible={visible} onClose={() => setVisible(false)} aria-labelledby="LiveDemoExampleLabel">
+        <CModalHeader>
+          <CModalTitle id="LiveDemoExampleLabel">Grup Oluştur</CModalTitle>
+        </CModalHeader>
+        <CModalBody>
+          <div style={{ dispaly: 'flex', gap: 10 }}>
+            <div style={{ display: 'flex', width: '100%', marginBottom: 20 }}>
+              <InputText
+                value={groupName}
+                onChange={e => setGroupName(e.target.value)}
+                style={{ width: '100%' }}
+                placeholder="Grup Adı"
+              />
+            </div>
+            <div style={{ display: 'flex', width: '100%' }}>
+              <MultiSelect
+                value={selectedUsers}
+                onChange={e => setSelectedUsers(e.value)}
+                options={selectUserList || []}
+                optionLabel="name"
+                style={{ width: '100%' }}
+                placeholder="Kişi Seç"
+                maxSelectedLabels={3}
+              />
+            </div>
+          </div>
+        </CModalBody>
+        <CModalFooter>
+          <CButton color="secondary" onClick={() => setVisible(false)}>
+            Kapat
+          </CButton>
+          <CButton
+            color="primary"
+            onClick={() => {
+              if (groupName && selectedUsers?.length > 0) {
+                addGroup(sessionStorage.getItem('userName'), {
+                  channelName: groupName,
+                  participants: [
+                    ...selectedUsers?.map(e => {
+                      return {
+                        username: e?.name,
+                        permissions: ['READ', 'WRITE'],
+                      };
+                    }),
+                    {
+                      username: sessionStorage.getItem('userName'),
+                      permissions: ['READ', 'WRITE'],
+                    },
+                  ],
+                });
+                setVisible(false);
+              } else {
+                toast.current.show({ severity: 'error', summary: 'Dikkat', detail: 'Kişi ve grup adı giriniz!' });
+              }
+            }}
+          >
+            Kaydet
+          </CButton>
+        </CModalFooter>
+      </CModal>
     </div>
   );
 };

@@ -255,7 +255,7 @@ html {
   height: 100%;
 }
 .send_btn {
-  border-radius: 0 15px 15px 0 !important;
+  border-radius: 0 15px 15px 0;
   background-color: rgba(0, 0, 0, 0.3) !important;
   border: 0 !important;
   color: white !important;
@@ -430,4 +430,8 @@ html {
 /* Handle on hover */
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(0, 0, 0, 0.2);
+}
+
+.p-multiselect-panel{
+  z-index: 999999999 !important;
 }
