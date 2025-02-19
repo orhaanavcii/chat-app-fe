@@ -319,7 +319,7 @@ const Messages = props => {
                   <div style={{ marginLeft: 15 }}>
                     <span
                       class="input-group-text send_btn"
-                      style={{ borderRadius: 0 }}
+                      style={{ borderRadius: 15 }}
                       onClick={() => {
                         setGroupName('');
                         setSelectedUsers(null);
@@ -383,6 +383,7 @@ const Messages = props => {
                               <span>{e?.userName}</span>
                               <p>{e?.userName}</p>
                             </div>
+                            <div></div>
                           </div>
                         </div>
                       </li>
@@ -493,21 +494,40 @@ const Messages = props => {
             color="primary"
             onClick={() => {
               if (groupName && selectedUsers?.length > 0) {
-                addGroup(sessionStorage.getItem('userName'), {
-                  channelName: groupName,
-                  participants: [
-                    ...selectedUsers?.map(e => {
-                      return {
-                        username: e?.name,
+                axios
+                  .post('/channels/create', {
+                    channelName: groupName,
+                    invitees: [
+                      ...selectedUsers?.map(e => {
+                        return {
+                          username: e?.name,
+                          permissions: ['READ', 'WRITE'],
+                        };
+                      }),
+                      {
+                        username: sessionStorage.getItem('userName'),
                         permissions: ['READ', 'WRITE'],
-                      };
-                    }),
-                    {
-                      username: sessionStorage.getItem('userName'),
-                      permissions: ['READ', 'WRITE'],
-                    },
-                  ],
-                });
+                      },
+                    ],
+                  })
+                  .then(res => {
+                    toast.current.show({ severity: 'success', summary: 'İşlem Başarılı', detail: 'Grup oluşturuldu.' });
+                  });
+                // addGroup(sessionStorage.getItem('userName'), {
+                //   channelName: groupName,
+                //   invitees: [
+                //     ...selectedUsers?.map(e => {
+                //       return {
+                //         username: e?.name,
+                //         permissions: ['READ', 'WRITE'],
+                //       };
+                //     }),
+                //     {
+                //       username: sessionStorage.getItem('userName'),
+                //       permissions: ['READ', 'WRITE'],
+                //     },
+                //   ],
+                // });
                 setVisible(false);
               } else {
                 toast.current.show({ severity: 'error', summary: 'Dikkat', detail: 'Kişi ve grup adı giriniz!' });
