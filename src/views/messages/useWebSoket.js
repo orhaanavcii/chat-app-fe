@@ -81,6 +81,9 @@ const useWebSocket = (
           });
           console.log('subscribed by registry message. route : ' + route);
         }
+        if(type==="CHAT_MESSAGE_DELIVERED"){
+          
+        }
       });
       sendFetchRegistryRequest(userName);
     }
@@ -91,10 +94,10 @@ const useWebSocket = (
       if (!isGroup) {
         if (userMessageList?.length > 0) {
           const tempList = [...userMessageList];
-          tempList.push({ message: { content: messageText, sender: gUserName } });
+          tempList.push({ message: { content: messageText, sender: gUserName, sendTime: new Date() } });
           setUserMassageList(tempList);
         } else {
-          setUserMassageList([{ message: { content: messageText, sender: gUserName } }]);
+          setUserMassageList([{ message: { content: messageText, sender: gUserName, sendTime: new Date() } }]);
         }
       }
       stompClientRef.current.publish({

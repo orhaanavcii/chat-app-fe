@@ -6,6 +6,7 @@ import { CButton, CModal, CModalBody, CModalFooter, CModalHeader, CModalTitle } 
 import { MultiSelect } from 'primereact/multiselect';
 import { InputText } from 'primereact/inputtext';
 import { Toast } from 'primereact/toast';
+import { format } from 'date-fns';
 
 const Messages = props => {
   const [userList, setUserList] = useState();
@@ -29,7 +30,9 @@ const Messages = props => {
   const [groupName, setGroupName] = useState('');
   const [selectUserList, setSelectUserList] = useState();
   const [selectedUsers, setSelectedUsers] = useState(null);
+  const [totalMessage, setTotaleMessage] = useState(0);
   const toast = useRef(null);
+  const [menu, setMenu] = useState({ visible: false, x: 0, y: 0 });
 
   const messageStatus = (message, reciever, type) => {
     console.log(message, reciever, 'üst');
@@ -51,6 +54,25 @@ const Messages = props => {
     addUserList,
     messageStatus,
   );
+
+  const handleContextMenu = (event, id) => {
+    event.preventDefault();
+    setMenu({ visible: true, x: event.clientX, y: event.clientY, id: id });
+  };
+
+  const handleClick = () => {
+    setMenu({ ...menu, visible: false });
+  };
+
+  useEffect(() => {
+    setUserMassageList(null);
+  }, [activeUser]);
+
+  useEffect(() => {
+    if (userMessageList) {
+      scrollToBottom();
+    }
+  }, [userMessageList]);
 
   useEffect(() => {
     if (userList?.length > 0) {
@@ -164,29 +186,80 @@ const Messages = props => {
     }
   }, [addUserList]);
 
-  const inMessageTemp = (user, message) => {
+  const inMessageTemp = (user, message, time, delivered) => {
     return (
       <div class="d-flex justify-content-start mb-4" style={{ display: 'flex' }}>
         <div class="img_cont" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div id="profileImage" style={{ margin: '12px auto 5px auto' }}>
-            {user?.userName[0]?.toUpperCase() + user?.userName[1]?.toUpperCase()}
-          </div>
+          <div id="profileImage">{user?.userName[0]?.toUpperCase() + user?.userName[1]?.toUpperCase()}</div>
         </div>
-        <div class="msg_cotainer" style={{ marginTop: '10px' }}>
-          {message}
+        <div class="msg_cotainer" style={{ display: 'flex', justifyContent: 'start' }}>
+          <div>{message}</div>
+          <div
+            style={{
+              fontSize: '10px',
+              marginLeft: 10,
+              display: 'flex',
+              alignItems: 'end',
+              position: 'relative',
+              bottom: '-5px',
+              justifyContent: 'end',
+              width: message?.length > 22 ? 80 : 40,
+            }}
+          >
+            {format(new Date(time), 'HH:mm')}{' '}
+          </div>
         </div>
       </div>
     );
   };
 
-  const outMessageTemp = (user, message) => {
+  const outMessageTemp = (user, message, time, delivered, id) => {
     return (
       <div class="d-flex justify-content-end mb-4">
-        <div class="msg_cotainer">{message}</div>
+        <div
+          class="msg_cotainer"
+          style={{ display: 'flex', justifyContent: 'start' }}
+          onContextMenu={event => handleContextMenu(event, id)}
+        >
+          <div>{message}</div>
+          <div
+            style={{
+              fontSize: '10px',
+              marginLeft: 10,
+              display: 'flex',
+              alignItems: 'end',
+              position: 'relative',
+              bottom: '-5px',
+              justifyContent: 'end',
+              width: message?.length > 22 ? 80 : 40,
+            }}
+          >
+            {time && format(new Date(time), 'HH:mm')}
+            <i
+              class="fa-solid fa-check-double"
+              style={{ margin: '0px 0px 0px 5px', position: 'relative', top: '-2px' }}
+            ></i>
+            {menu?.id === id && menu.visible && (
+              <ul
+                style={{
+                  position: 'fixed',
+                  top: `${menu.y}px`,
+                  left: `${menu.x}px`,
+                  backgroundColor: 'white',
+                  boxShadow: '0px 0px 10px rgba(0,0,0,0.1)',
+                  padding: '10px',
+                  borderRadius: '5px',
+                  listStyle: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                <li onClick={() => deleteMessage(id)}>Sil</li>
+              </ul>
+            )}
+          </div>
+        </div>
         <div class="img_cont" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div id="profileImage" style={{ margin: '12px auto 5px auto' }}>
-            {user?.userName[0]?.toUpperCase() + user?.userName[1]?.toUpperCase()}
-          </div>{' '}
+          <div id="profileImage">{user?.userName[0]?.toUpperCase() + user?.userName[1]?.toUpperCase()}</div>
         </div>
       </div>
     );
@@ -226,15 +299,22 @@ const Messages = props => {
             if (!r?.channel?.base) {
               tempData.push({
                 ...r?.channel,
-                icon: 'fa-solid fa-user-doctor',
+                icon: 'fa-solid fa-users',
                 groupId: r?.channel?.channelId,
                 userName: r?.channel?.channelName,
                 isGroup: true,
+                lastMessageTime: new Date(),
               });
             }
           });
         } else {
-          tempData.push({ ...e, icon: 'fa-solid fa-user-doctor', userName: e?.username, isGroup: false });
+          tempData.push({
+            ...e,
+            icon: 'fa-solid fa-user',
+            userName: e?.username,
+            isGroup: false,
+            lastMessageTime: new Date(),
+          });
         }
       });
       setUserList(tempData);
@@ -243,22 +323,12 @@ const Messages = props => {
   }, []);
 
   useEffect(() => {
-    setUserMassageList(null);
-  }, [activeUser]);
-
-  useEffect(() => {
-    if (userMessageList) {
-      scrollToBottom();
-    }
-  }, [userMessageList]);
-
-  useEffect(() => {
     if (notification) {
       setFilterList(
         filterList?.map(e => {
           const tempNot = notification?.find(x => x?.user === e?.userName || x?.user === e?.groupId);
           if (tempNot) {
-            return { ...e, count: tempNot?.count };
+            return { ...e, count: tempNot?.count, lastMessageTime: tempNot?.count ? new Date() : e?.lastMessageTime };
           } else {
             return e;
           }
@@ -295,10 +365,18 @@ const Messages = props => {
     }
   }, [activeUser]);
 
+  const deleteAllMessage = channelId => {
+    alert(channelId);
+  };
+
+  const deleteMessage = messageId => {
+    alert(messageId);
+  };
+
   return (
     <div className="maincontainer">
       <Toast ref={toast} />
-      <div class="container-fluid h-50">
+      <div class="container-fluid h-50" onClick={handleClick}>
         <div class="row justify-content-center h-100">
           <div class="col-md-12 col-lg-4 col-xl-3 chat" style={{ marginBottom: 15 }}>
             <div class="card mb-sm-3 mb-md-0 contacts_card">
@@ -333,61 +411,64 @@ const Messages = props => {
               </div>
               <div class="card-body contacts_body">
                 <ul class="contacts">
-                  {filterList?.map(e => {
-                    return (
-                      <li
-                        class={e?.userName === activeUser?.userName ? 'active' : ''}
-                        style={{ cursor: 'pointer' }}
-                        onClick={() => {
-                          if (
-                            activeUser?.isGroup
-                              ? e?.groupId !== activeUser?.groupId
-                              : e?.userName !== activeUser?.userName
-                          ) {
-                            console.log(e, 'active');
-                            setActiveUser(e);
-                            setUserMassageList(null);
-                          }
-                        }}
-                      >
-                        <div>
-                          <div class="d-flex bd-highlight">
-                            {e?.count ? (
+                  {filterList
+                    ?.sort((a, b) => {
+                      return new Date(b?.lastMessageTime)?.getTime() - new Date(a?.lastMessageTime)?.getTime();
+                    })
+                    ?.map(e => {
+                      return (
+                        <li
+                          class={e?.userName === activeUser?.userName ? 'active' : ''}
+                          style={{ cursor: 'pointer' }}
+                          onClick={() => {
+                            if (
+                              activeUser?.isGroup
+                                ? e?.groupId !== activeUser?.groupId
+                                : e?.userName !== activeUser?.userName
+                            ) {
+                              setActiveUser(e);
+                              setUserMassageList(null);
+                            }
+                          }}
+                        >
+                          <div>
+                            <div class="d-flex bd-highlight">
+                              {e?.count ? (
+                                <div
+                                  style={{
+                                    color: 'yellow',
+                                    background: 'blue',
+                                    borderRadius: 100,
+                                    height: '25px',
+                                    width: '25px',
+                                    display: 'flex',
+                                    justifyContent: 'center',
+                                    position: 'relative',
+                                    zIndex: 999,
+                                    left: '-1px',
+                                  }}
+                                >
+                                  {e?.count}
+                                </div>
+                              ) : (
+                                ''
+                              )}
                               <div
-                                style={{
-                                  color: 'yellow',
-                                  background: 'blue',
-                                  borderRadius: 100,
-                                  height: '25px',
-                                  width: '25px',
-                                  display: 'flex',
-                                  justifyContent: 'center',
-                                  position: 'relative',
-                                  zIndex: 999,
-                                  left: '-1px',
-                                }}
+                                class="img_cont"
+                                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                               >
-                                {e?.count}
+                                <i className={e?.icon} style={{ fontSize: '45px', color: 'white' }} />
+                                <span class="online_icon"></span>
                               </div>
-                            ) : (
-                              ''
-                            )}
-                            <div
-                              class="img_cont"
-                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                            >
-                              <i className={e?.icon} style={{ fontSize: '45px', color: 'white' }} />
-                              <span class="online_icon"></span>
-                            </div>
-                            <div class="user_info">
-                              <span>{e?.userName}</span>
-                              <p>{e?.userName}</p>
+                              <div class="user_info">
+                                <span>{e?.userName}</span>
+                                <p>{e?.userName}</p>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </li>
-                    );
-                  })}
+                        </li>
+                      );
+                    })}
                 </ul>
               </div>
               <div class="card-footer"></div>
@@ -399,12 +480,29 @@ const Messages = props => {
                 <div class="d-flex bd-highlight">
                   <div class="img_cont">
                     <div class="img_cont" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <i className={activeUser?.icon} style={{ fontSize: '45px', color: 'white' }} />
+                      <i
+                        className={activeUser?.isGroup ? 'fa-solid fa-users' : 'fa-solid fa-user'}
+                        style={{ fontSize: '45px', color: 'white' }}
+                      />
                     </div>
                   </div>
-                  <div class="user_info">
-                    <span>Chat with {activeUser?.name}</span>
-                    <p>1767 Messages</p>
+                  <div class="user_info2">
+                    <span>Chat with {activeUser?.userName}</span>
+                    <p>{userMessageList?.length ? userMessageList?.length + ' ' + 'Messages' : ''}</p>
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'end',
+                      width: '100%',
+                      position: 'absolute',
+                      left: '-20px',
+                      top: '34px',
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => deleteAllMessage(activeUser?.userName || activeUser?.groupId)}
+                  >
+                    <i class="fa-solid fa-trash-can" style={{ color: 'white' }}></i>
                   </div>
                 </div>
               </div>
@@ -416,11 +514,19 @@ const Messages = props => {
                       e?.message?.sender === sessionStorage.getItem('userName') ||
                       e?.sender === sessionStorage.getItem('userName')
                     ) {
-                      return outMessageTemp({ userName: sessionStorage.getItem('userName') }, e?.message?.content);
+                      return outMessageTemp(
+                        { userName: sessionStorage.getItem('userName') },
+                        e?.message?.content,
+                        e?.message?.sendTime,
+                        true,
+                        e?.message?.messageId || Math.random(),
+                      );
                     } else {
                       return inMessageTemp(
                         userList?.find(x => x?.userName === e?.message?.sender || x?.userName === e?.sender),
                         e?.message?.content,
+                        e?.message?.sendTime,
+                        true,
                       );
                     }
                   })}
@@ -447,6 +553,15 @@ const Messages = props => {
                         sendMessage(messageText, sessionStorage.getItem('userName'), activeUser?.isGroup);
                         setMessageText('');
                         scrollToBottom();
+                        setFilterList(
+                          filterList?.map(e => {
+                            if (e?.userName === activeUser?.userName) {
+                              return { ...e, lastMessageTime: new Date() };
+                            } else {
+                              return e;
+                            }
+                          }),
+                        );
                       }}
                     >
                       <i class="fas fa-location-arrow"></i>
@@ -512,21 +627,6 @@ const Messages = props => {
                   .then(res => {
                     toast.current.show({ severity: 'success', summary: 'İşlem Başarılı', detail: 'Grup oluşturuldu.' });
                   });
-                // addGroup(sessionStorage.getItem('userName'), {
-                //   channelName: groupName,
-                //   invitees: [
-                //     ...selectedUsers?.map(e => {
-                //       return {
-                //         username: e?.name,
-                //         permissions: ['READ', 'WRITE'],
-                //       };
-                //     }),
-                //     {
-                //       username: sessionStorage.getItem('userName'),
-                //       permissions: ['READ', 'WRITE'],
-                //     },
-                //   ],
-                // });
                 setVisible(false);
               } else {
                 toast.current.show({ severity: 'error', summary: 'Dikkat', detail: 'Kişi ve grup adı giriniz!' });

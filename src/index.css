@@ -319,6 +319,20 @@ html {
   margin-bottom: auto;
   margin-left: 15px;
 }
+.user_info2 {
+  margin-top: auto;
+  margin-bottom: auto;
+  margin-left: 15px;
+  width:100%;
+}
+.user_info2 span {
+  font-size: 20px;
+  color: white;
+}
+.user_info2 p {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
+}
 .user_info span {
   font-size: 20px;
   color: white;
@@ -345,6 +359,8 @@ html {
   background-color: #82ccdd;
   padding: 10px;
   position: relative;
+  word-wrap: break-word;
+  word-break: break-all;
 }
 .msg_cotainer_send {
   margin-top: auto;
@@ -354,6 +370,8 @@ html {
   background-color: #78e08f;
   padding: 10px;
   position: relative;
+  word-wrap: break-word;
+  word-break: break-all;
 }
 .msg_time {
   position: absolute;
