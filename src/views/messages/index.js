@@ -383,7 +383,6 @@ const Messages = props => {
                               <span>{e?.userName}</span>
                               <p>{e?.userName}</p>
                             </div>
-                            <div></div>
                           </div>
                         </div>
                       </li>
