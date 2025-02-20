@@ -14,6 +14,8 @@ const useWebSocket = (
   addUserList,
   messageStatus,
   setActivePage,
+  deliveredMessage,
+  setDeliveredMessage,
 ) => {
   const stompClientRef = useRef(null);
   const [newMessage, setNewMessage] = useState('');
@@ -88,6 +90,13 @@ const useWebSocket = (
           console.log('subscribed by registry message. route : ' + route);
         }
         if (type === 'CHAT_MESSAGE_DELIVERED') {
+          if (deliveredMessage) {
+            const tempData = [...deliveredMessage];
+            tempData.push({ messageId: messageId });
+            setDeliveredMessage(tempData);
+          } else {
+            setDeliveredMessage([{ messageId: messageId }]);
+          }
         }
         if (type === 'DELETE_CHAT_MESSAGE') {
           messageStatus(
@@ -112,12 +121,26 @@ const useWebSocket = (
         if (userMessageList?.length > 0) {
           const tempList = [...userMessageList];
           tempList.push({
-            message: { content: messageText, sender: gUserName, sendTime: new Date(), messageId: messageId },
+            message: {
+              content: messageText,
+              sender: gUserName,
+              sendTime: new Date(),
+              messageId: messageId,
+              deliveredIcon: 'fa-solid fa-check',
+            },
           });
           setUserMassageList(tempList);
         } else {
           setUserMassageList([
-            { message: { content: messageText, sender: gUserName, sendTime: new Date(), messageId: messageId } },
+            {
+              message: {
+                content: messageText,
+                sender: gUserName,
+                sendTime: new Date(),
+                messageId: messageId,
+                deliveredIcon: 'fa-solid fa-check',
+              },
+            },
           ]);
         }
       }

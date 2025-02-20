@@ -33,7 +33,7 @@ const Messages = props => {
   const [groupName, setGroupName] = useState('');
   const [selectUserList, setSelectUserList] = useState();
   const [selectedUsers, setSelectedUsers] = useState(null);
-  const [totalMessage, setTotaleMessage] = useState(0);
+  const [deliveredMessage, setDeliveredMessage] = useState(null);
   const toast = useRef(null);
   const [menu, setMenu] = useState({ visible: false, x: 0, y: 0 });
 
@@ -58,6 +58,8 @@ const Messages = props => {
     addUserList,
     messageStatus,
     setActivePage,
+    deliveredMessage,
+    setDeliveredMessage,
   );
 
   const handleContextMenu = (event, id) => {
@@ -108,7 +110,6 @@ const Messages = props => {
         console.log('active user:', activeUser);
         console.log('type:', type);
         console.log('delete:', deleteMessageId);
-        console.log(newNotification?.user, activeUser?.groupId, newNotification?.user, activeUser?.userName);
         if (type === 'delete') {
           if (deleteMessageId) {
             setUserMassageList(userMessageList?.filter(e => e?.message?.messageId !== deleteMessageId));
@@ -161,6 +162,18 @@ const Messages = props => {
       }
     }
   }, [newNotification]);
+
+  useEffect(() => {
+    if (deliveredMessage) {
+      setUserMassageList(
+        userMessageList?.map(e =>
+          deliveredMessage?.find(x => x?.messageId === e?.message?.messageId)
+            ? { ...e, deliveredIcon: 'fa-solid fa-check-double' }
+            : { ...e },
+        ),
+      );
+    }
+  }, [deliveredMessage]);
 
   useEffect(() => {
     if (filterList) {
@@ -227,7 +240,7 @@ const Messages = props => {
     );
   };
 
-  const outMessageTemp = (user, message, time, delivered, id) => {
+  const outMessageTemp = (user, message, time, delivered, id, icon) => {
     return (
       <div class="d-flex justify-content-end mb-4">
         <div
@@ -250,7 +263,7 @@ const Messages = props => {
           >
             {time && format(new Date(time), 'HH:mm')}
             <i
-              class="fa-solid fa-check-double"
+              class={icon ? icon : 'fa-solid fa-check-double'}
               style={{ margin: '0px 0px 0px 5px', position: 'relative', top: '-2px' }}
             ></i>
             {menu?.id === id && menu.visible && (
@@ -265,7 +278,8 @@ const Messages = props => {
                   borderRadius: '5px',
                   listStyle: 'none',
                   cursor: 'pointer',
-                }} onClick={() => deleteMessage(id)}
+                }}
+                onClick={() => deleteMessage(id)}
               >
                 <li>Sil</li>
               </ul>
@@ -388,7 +402,6 @@ const Messages = props => {
 
   const deleteMessage = messageId => {
     axios.delete(`/message-history/delete/all/${activeChatKey}/${messageId}`).then(res => {
-      console.log(res);
       if (res.data?.status === 200) {
         deleteChatMessage(activeChatKey, messageId, activeUser?.groupId || activeUser?.userName);
         setUserMassageList(userMessageList?.filter(e => e?.message?.messageId !== messageId));
@@ -515,7 +528,7 @@ const Messages = props => {
                   </div>
                   <div
                     style={{
-                      display: 'flex',
+                      display: userMessageList?.length ? 'flex' : 'none',
                       justifyContent: 'end',
                       width: '100%',
                       position: 'absolute',
@@ -543,6 +556,7 @@ const Messages = props => {
                         e?.message?.sendTime,
                         true,
                         e?.message?.messageId || Math.random(),
+                        e?.deliveredIcon,
                       );
                     } else {
                       return inMessageTemp(
