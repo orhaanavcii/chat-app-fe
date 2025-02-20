@@ -17,6 +17,7 @@ const Messages = props => {
   const userName = sessionStorage.getItem('userName');
   const brokerUrl = 'ws://localhost:8080/ws/websocket'; // WebSocket sunucu adresi
   const [userMessageList, setUserMassageList] = useState();
+  const [activeChatKey, setActiveChatKey] = useState();
   const [notification, setNotification] = useState();
   const [addUserList, setAddUserList] = useState();
   const messagesEndRef = useRef(null);
@@ -283,6 +284,7 @@ const Messages = props => {
             }
           });
           setUserMassageList(tempMessage?.messages);
+          setActiveChatKey(tempMessage?.chatKey);
           scrollToBottom();
         });
       }
@@ -365,12 +367,12 @@ const Messages = props => {
     }
   }, [activeUser]);
 
-  const deleteAllMessage = channelId => {
-    alert(channelId);
+  const deleteAllMessage = username => {
+    axios.delete(`/delete/${activeChatKey}/${username}`).then(res => {});
   };
 
   const deleteMessage = messageId => {
-    alert(messageId);
+    axios.delete(`/delete/all/${activeChatKey}/${messageId}`).then(res => {});
   };
 
   return (
@@ -461,7 +463,7 @@ const Messages = props => {
                                 <span class="online_icon"></span>
                               </div>
                               <div class="user_info">
-                                <span>{e?.userName}</span>
+                                <span>{e?.userFullName}</span>
                                 <p>{e?.userName}</p>
                               </div>
                             </div>
@@ -487,7 +489,7 @@ const Messages = props => {
                     </div>
                   </div>
                   <div class="user_info2">
-                    <span>Chat with {activeUser?.userName}</span>
+                    <span>Chat with {activeUser?.userFullName}</span>
                     <p>{userMessageList?.length ? userMessageList?.length + ' ' + 'Messages' : ''}</p>
                   </div>
                   <div
@@ -500,7 +502,7 @@ const Messages = props => {
                       top: '34px',
                       cursor: 'pointer',
                     }}
-                    onClick={() => deleteAllMessage(activeUser?.userName || activeUser?.groupId)}
+                    onClick={() => deleteAllMessage(sessionStorage.getItem('userName'))}
                   >
                     <i class="fa-solid fa-trash-can" style={{ color: 'white' }}></i>
                   </div>

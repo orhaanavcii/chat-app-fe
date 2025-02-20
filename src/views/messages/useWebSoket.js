@@ -25,6 +25,7 @@ const useWebSocket = (
         brokerURL: brokerUrl,
         connectHeaders: {
           username: userName,
+          userFullName: userName === 'oavci' ? 'Orhan Avcı' : userName === 'edongez' ? 'Enes Döngez' : 'Test User',
         },
         onConnect: () => {
           console.log('Connected to chat!');
@@ -81,8 +82,7 @@ const useWebSocket = (
           });
           console.log('subscribed by registry message. route : ' + route);
         }
-        if(type==="CHAT_MESSAGE_DELIVERED"){
-          
+        if (type === 'CHAT_MESSAGE_DELIVERED') {
         }
       });
       sendFetchRegistryRequest(userName);
