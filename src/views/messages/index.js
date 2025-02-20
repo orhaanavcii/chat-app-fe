@@ -108,22 +108,18 @@ const Messages = props => {
         console.log('active user:', activeUser);
         console.log('type:', type);
         console.log('delete:', deleteMessageId);
-        console.log(
-          activeUser?.isGroup
-            ? newNotification?.user === activeUser?.groupId
-            : newNotification?.user === activeUser?.userName,
-        );
+        console.log(newNotification?.user, activeUser?.groupId, newNotification?.user, activeUser?.userName);
+        if (type === 'delete') {
+          if (deleteMessageId) {
+            setUserMassageList(userMessageList?.filter(e => e?.message?.messageId !== deleteMessageId));
+          }
+        }
         if (
           activeUser?.isGroup
             ? newNotification?.user === activeUser?.groupId
             : newNotification?.user === activeUser?.userName
         ) {
-          if (type === 'delete') {
-            if (deleteMessageId) {
-              console.log(userMessageList, 'iki');
-              setUserMassageList(userMessageList?.filter(e => e?.message?.messageId !== deleteMessageId));
-            }
-          } else if (userMessageList?.length > 0) {
+          if (userMessageList?.length > 0) {
             const tempList = [...userMessageList];
             tempList.push({
               ...newMessage,
@@ -221,7 +217,7 @@ const Messages = props => {
               position: 'relative',
               bottom: '-5px',
               justifyContent: 'end',
-              width: message?.length > 22 ? 80 : 40,
+              width: message?.length > 22 ? 80 : 45,
             }}
           >
             {format(new Date(time), 'HH:mm')}{' '}
@@ -249,7 +245,7 @@ const Messages = props => {
               position: 'relative',
               bottom: '-5px',
               justifyContent: 'end',
-              width: message?.length > 22 ? 80 : 40,
+              width: message?.length > 22 ? 80 : 45,
             }}
           >
             {time && format(new Date(time), 'HH:mm')}
@@ -269,9 +265,9 @@ const Messages = props => {
                   borderRadius: '5px',
                   listStyle: 'none',
                   cursor: 'pointer',
-                }}
+                }} onClick={() => deleteMessage(id)}
               >
-                <li onClick={() => deleteMessage(id)}>Sil</li>
+                <li>Sil</li>
               </ul>
             )}
           </div>
@@ -397,7 +393,6 @@ const Messages = props => {
         deleteChatMessage(activeChatKey, messageId, activeUser?.groupId || activeUser?.userName);
         setUserMassageList(userMessageList?.filter(e => e?.message?.messageId !== messageId));
       }
-      // console.log(userMessageList?.filter((e)=>e?.mesage))
     });
   };
 
@@ -528,7 +523,7 @@ const Messages = props => {
                       top: '34px',
                       cursor: 'pointer',
                     }}
-                    onClick={() => deleteAllMessage(sessionStorage.getItem('userName'))}
+                    onClick={() => !activePage && deleteAllMessage(sessionStorage.getItem('userName'))}
                   >
                     <i class="fa-solid fa-trash-can" style={{ color: 'white' }}></i>
                   </div>

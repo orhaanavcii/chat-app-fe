@@ -44,7 +44,11 @@ const useWebSocket = (
         const { type, sender, content, sendTime, receiver, messageId, freeze } = JSON.parse(message.body);
         console.log(type, sender, content, receiver, 'main');
         if (type === 'CHAT_MESSAGE') {
-          messageStatus({ message: { content: content, sendTime: sendTime } }, { user: sender }, 'main');
+          messageStatus(
+            { message: { content: content, sendTime: sendTime, messageId: messageId } },
+            { user: sender },
+            'main',
+          );
           messageReceived(message);
         }
         if (type === 'FETCH_REGISTRY_RESPONSE') {
@@ -53,11 +57,11 @@ const useWebSocket = (
             .filter(subscription => subscription.channel.route !== mainRoute) //isBased değilse ile değiştirilecek
             .map(subscription => {
               stompClientRef?.current.subscribe(subscription.channel.route, messageSubscribe => {
-                const { type, sender, content, sendTime, receiver } = JSON.parse(messageSubscribe.body);
+                const { type, sender, content, sendTime, receiver, messageId } = JSON.parse(messageSubscribe.body);
                 console.log(receiver, activeUser, sender, 'sub');
                 if (type === 'CHAT_MESSAGE') {
                   messageStatus(
-                    { message: { content: content, sendTime: sendTime } },
+                    { message: { content: content, sendTime: sendTime, messageId: messageId } },
                     { user: receiver, sender: sender },
                     'sub',
                   );
@@ -70,11 +74,11 @@ const useWebSocket = (
           const { channelId, route } = JSON.parse(message.body);
           setAddUserList(JSON.parse(message.body));
           stompClientRef?.current.subscribe(route, messageGroup => {
-            const { type, sender, content, sendTime, receiver } = JSON.parse(messageGroup.body);
+            const { type, sender, content, sendTime, receiver, messageId } = JSON.parse(messageGroup.body);
             console.log(type, sender, content, JSON.parse(messageGroup.body), 'invite channel');
             if (type === 'CHAT_MESSAGE') {
               messageStatus(
-                { message: { content: content, sendTime: sendTime } },
+                { message: { content: content, sendTime: sendTime, messageId: messageId } },
                 { user: receiver, sender: sender },
                 'invitechannel',
               );
@@ -103,13 +107,18 @@ const useWebSocket = (
 
   const sendMessage = (messageText, gUserName, isGroup) => {
     if (stompClientRef.current && stompClientRef.current.connected) {
+      const messageId = crypto.randomUUID();
       if (!isGroup) {
         if (userMessageList?.length > 0) {
           const tempList = [...userMessageList];
-          tempList.push({ message: { content: messageText, sender: gUserName, sendTime: new Date() } });
+          tempList.push({
+            message: { content: messageText, sender: gUserName, sendTime: new Date(), messageId: messageId },
+          });
           setUserMassageList(tempList);
         } else {
-          setUserMassageList([{ message: { content: messageText, sender: gUserName, sendTime: new Date() } }]);
+          setUserMassageList([
+            { message: { content: messageText, sender: gUserName, sendTime: new Date(), messageId: messageId } },
+          ]);
         }
       }
       stompClientRef.current.publish({
@@ -120,7 +129,7 @@ const useWebSocket = (
             traceId: crypto.randomUUID(),
             isGroup: activeUser?.isGroup || false,
             chatId: 1,
-            messageId: crypto.randomUUID(),
+            messageId: messageId,
             sender: gUserName,
             receiver: activeUser?.isGroup ? activeUser?.groupId : activeUser?.userName,
             sendTime: new Date(),
