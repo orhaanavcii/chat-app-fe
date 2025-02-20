@@ -13,6 +13,7 @@ const useWebSocket = (
   setAddUserList,
   addUserList,
   messageStatus,
+  setActivePage,
 ) => {
   const stompClientRef = useRef(null);
   const [newMessage, setNewMessage] = useState('');
@@ -40,7 +41,7 @@ const useWebSocket = (
     if (stompClientRef?.current && stompClientRef?.current?.connected) {
       const mainRoute = `/user/${userName}/messages`;
       stompClientRef?.current.subscribe(mainRoute, message => {
-        const { type, sender, content, sendTime, receiver } = JSON.parse(message.body);
+        const { type, sender, content, sendTime, receiver, messageId, freeze } = JSON.parse(message.body);
         console.log(type, sender, content, receiver, 'main');
         if (type === 'CHAT_MESSAGE') {
           messageStatus({ message: { content: content, sendTime: sendTime } }, { user: sender }, 'main');
@@ -84,6 +85,17 @@ const useWebSocket = (
         }
         if (type === 'CHAT_MESSAGE_DELIVERED') {
         }
+        if (type === 'DELETE_CHAT_MESSAGE') {
+          messageStatus(
+            { message: { content: content, sendTime: sendTime } },
+            { user: receiver, sender: sender },
+            'delete',
+            messageId,
+          );
+        }
+        if (type === 'SYSTEM_FREEZE_MESSAGE') {
+          setActivePage(freeze);
+        }
       });
       sendFetchRegistryRequest(userName);
     }
@@ -110,7 +122,7 @@ const useWebSocket = (
             chatId: 1,
             messageId: crypto.randomUUID(),
             sender: gUserName,
-            receiver: activeUser?.isGroup ? activeUser.groupId : activeUser.userName,
+            receiver: activeUser?.isGroup ? activeUser?.groupId : activeUser?.userName,
             sendTime: new Date(),
             content: messageText,
             type: 'CHAT_MESSAGE',
@@ -120,6 +132,25 @@ const useWebSocket = (
     } else {
       console.error('WebSocket is not connected.');
     }
+  };
+
+  const deleteChatMessage = (chatKey, messageId, gUserName) => {
+    stompClientRef.current.publish({
+      destination: '/app/chat.sendMessage',
+      body: JSON.stringify({
+        type: 'DELETE_CHAT_MESSAGE',
+        payload: {
+          traceId: crypto.randomUUID(),
+          isGroup: activeUser?.isGroup || false,
+          chatKey: chatKey,
+          messageId: messageId,
+          sender: gUserName,
+          receiver: activeUser?.isGroup ? activeUser?.groupId : activeUser?.userName,
+          sendTime: new Date(),
+          type: 'DELETE_CHAT_MESSAGE',
+        },
+      }),
+    });
   };
 
   const addGroup = (gUserName, data) => {
@@ -172,7 +203,7 @@ const useWebSocket = (
     });
   };
 
-  return { userMessageList, setUserMassageList, sendMessage, addGroup };
+  return { userMessageList, setUserMassageList, sendMessage, addGroup, deleteChatMessage };
 };
 
 export default useWebSocket;

@@ -24,6 +24,8 @@ const Messages = props => {
   const [newMessage, setNewMessage] = useState('');
   const [type, setType] = useState('');
   const [newNotification, setNewNotification] = useState('');
+  const [deleteMessageId, setDeleteMessageId] = useState('');
+  const [activePage, setActivePage] = useState(false);
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -35,14 +37,15 @@ const Messages = props => {
   const toast = useRef(null);
   const [menu, setMenu] = useState({ visible: false, x: 0, y: 0 });
 
-  const messageStatus = (message, reciever, type) => {
-    console.log(message, reciever, 'üst');
+  const messageStatus = (message, reciever, type, messageId) => {
+    console.log(message, reciever, messageId, 'üst');
+    setDeleteMessageId(messageId);
     setNewMessage(message);
     setType(type);
     setNewNotification(reciever);
   };
 
-  const { sendMessage, addGroup } = useWebSocket(
+  const { sendMessage, addGroup, deleteChatMessage } = useWebSocket(
     brokerUrl,
     userName,
     activeUser,
@@ -54,11 +57,14 @@ const Messages = props => {
     setAddUserList,
     addUserList,
     messageStatus,
+    setActivePage,
   );
 
   const handleContextMenu = (event, id) => {
-    event.preventDefault();
-    setMenu({ visible: true, x: event.clientX, y: event.clientY, id: id });
+    if (!activePage) {
+      event.preventDefault();
+      setMenu({ visible: true, x: event.clientX, y: event.clientY, id: id });
+    }
   };
 
   const handleClick = () => {
@@ -101,12 +107,23 @@ const Messages = props => {
         console.log('noti user:', newNotification);
         console.log('active user:', activeUser);
         console.log('type:', type);
+        console.log('delete:', deleteMessageId);
+        console.log(
+          activeUser?.isGroup
+            ? newNotification?.user === activeUser?.groupId
+            : newNotification?.user === activeUser?.userName,
+        );
         if (
           activeUser?.isGroup
             ? newNotification?.user === activeUser?.groupId
             : newNotification?.user === activeUser?.userName
         ) {
-          if (userMessageList?.length > 0) {
+          if (type === 'delete') {
+            if (deleteMessageId) {
+              console.log(userMessageList, 'iki');
+              setUserMassageList(userMessageList?.filter(e => e?.message?.messageId !== deleteMessageId));
+            }
+          } else if (userMessageList?.length > 0) {
             const tempList = [...userMessageList];
             tempList.push({
               ...newMessage,
@@ -368,11 +385,20 @@ const Messages = props => {
   }, [activeUser]);
 
   const deleteAllMessage = username => {
-    axios.delete(`/delete/${activeChatKey}/${username}`).then(res => {});
+    axios.delete(`/message-history/delete/${activeChatKey}/${username}`).then(res => {
+      setUserMassageList(null);
+    });
   };
 
   const deleteMessage = messageId => {
-    axios.delete(`/delete/all/${activeChatKey}/${messageId}`).then(res => {});
+    axios.delete(`/message-history/delete/all/${activeChatKey}/${messageId}`).then(res => {
+      console.log(res);
+      if (res.data?.status === 200) {
+        deleteChatMessage(activeChatKey, messageId, activeUser?.groupId || activeUser?.userName);
+        setUserMassageList(userMessageList?.filter(e => e?.message?.messageId !== messageId));
+      }
+      // console.log(userMessageList?.filter((e)=>e?.mesage))
+    });
   };
 
   return (
@@ -543,6 +569,7 @@ const Messages = props => {
                   </div>
                   <textarea
                     name=""
+                    disabled={activePage}
                     class="form-control type_msg"
                     placeholder="Type your message..."
                     onChange={e => setMessageText(e?.target.value)}
@@ -552,18 +579,20 @@ const Messages = props => {
                     <span
                       class="input-group-text send_btn"
                       onClick={() => {
-                        sendMessage(messageText, sessionStorage.getItem('userName'), activeUser?.isGroup);
-                        setMessageText('');
-                        scrollToBottom();
-                        setFilterList(
-                          filterList?.map(e => {
-                            if (e?.userName === activeUser?.userName) {
-                              return { ...e, lastMessageTime: new Date() };
-                            } else {
-                              return e;
-                            }
-                          }),
-                        );
+                        if (!activePage) {
+                          sendMessage(messageText, sessionStorage.getItem('userName'), activeUser?.isGroup);
+                          setMessageText('');
+                          scrollToBottom();
+                          setFilterList(
+                            filterList?.map(e => {
+                              if (e?.userName === activeUser?.userName) {
+                                return { ...e, lastMessageTime: new Date() };
+                              } else {
+                                return e;
+                              }
+                            }),
+                          );
+                        }
                       }}
                     >
                       <i class="fas fa-location-arrow"></i>
