@@ -496,7 +496,7 @@ const Messages = props => {
                                 <span class="online_icon"></span>
                               </div>
                               <div class="user_info">
-                                <span>{e?.userFullName}</span>
+                                <span>{e?.isGroup ? e?.userName : e?.userFullName}</span>
                                 <p>{e?.userName}</p>
                               </div>
                             </div>
