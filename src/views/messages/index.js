@@ -38,7 +38,6 @@ const Messages = props => {
   const [menu, setMenu] = useState({ visible: false, x: 0, y: 0 });
 
   const messageStatus = (message, reciever, type, messageId) => {
-    console.log(message, reciever, messageId, 'üst');
     setDeleteMessageId(messageId);
     setNewMessage(message);
     setType(type);
@@ -168,7 +167,7 @@ const Messages = props => {
       setUserMassageList(
         userMessageList?.map(e =>
           deliveredMessage?.find(x => x?.messageId === e?.message?.messageId)
-            ? { ...e, deliveredIcon: 'fa-solid fa-check-double' }
+            ? { ...e, message: { ...e?.message, deliveredIcon: 'fa-solid fa-check-double' } }
             : { ...e },
         ),
       );
@@ -556,7 +555,7 @@ const Messages = props => {
                         e?.message?.sendTime,
                         true,
                         e?.message?.messageId || Math.random(),
-                        e?.deliveredIcon,
+                        e?.message?.deliveredIcon,
                       );
                     } else {
                       return inMessageTemp(
