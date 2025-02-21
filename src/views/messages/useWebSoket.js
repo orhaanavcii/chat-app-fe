@@ -235,7 +235,25 @@ const useWebSocket = (
     });
   };
 
-  return { userMessageList, setUserMassageList, sendMessage, addGroup, deleteChatMessage };
+  const messageReceivedContol = (traceId, sender, receiver, messageId, isGroup) => {
+    stompClientRef.current.publish({
+      destination: '/app/chat.sendMessage',
+      body: JSON.stringify({
+        type: 'CHAT_MESSAGE_DELIVERED',
+        payload: {
+          traceId: traceId,
+          sender: sender,
+          receiver: receiver,
+          messageId: messageId,
+          deliveredTime: new Date(),
+          type: 'CHAT_MESSAGE_DELIVERED',
+          isGroup: isGroup || false,
+        },
+      }),
+    });
+  };
+
+  return { userMessageList, setUserMassageList, sendMessage, addGroup, deleteChatMessage, messageReceivedContol };
 };
 
 export default useWebSocket;

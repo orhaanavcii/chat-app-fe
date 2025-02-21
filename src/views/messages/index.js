@@ -44,7 +44,7 @@ const Messages = props => {
     setNewNotification(reciever);
   };
 
-  const { sendMessage, addGroup, deleteChatMessage } = useWebSocket(
+  const { sendMessage, addGroup, deleteChatMessage, messageReceivedContol } = useWebSocket(
     brokerUrl,
     userName,
     activeUser,
@@ -311,6 +311,21 @@ const Messages = props => {
           });
           setUserMassageList(tempMessage?.messages);
           setActiveChatKey(tempMessage?.chatKey);
+          tempMessage?.messages?.forEach(e => {
+            if (
+              e?.messageOwnerDetails?.find(
+                x => !x?.delivered && x?.owner?.username === sessionStorage.getItem('userName'),
+              )
+            ) {
+              messageReceivedContol(
+                e?.message?.traceId,
+                e?.message?.reciever,
+                e?.message?.sender,
+                e?.message?.messageId,
+                false,
+              );
+            }
+          });
           scrollToBottom();
         });
       }
@@ -522,7 +537,7 @@ const Messages = props => {
                     </div>
                   </div>
                   <div class="user_info2">
-                    <span>Chat with {activeUser?.userFullName}</span>
+                    <span>Chat with {activeUser?.isGroup ? activeUser?.userName : activeUser?.userFullName}</span>
                     <p>{userMessageList?.length ? userMessageList?.length + ' ' + 'Messages' : ''}</p>
                   </div>
                   <div
