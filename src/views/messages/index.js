@@ -36,6 +36,7 @@ const Messages = props => {
   const [deliveredMessage, setDeliveredMessage] = useState(null);
   const toast = useRef(null);
   const [menu, setMenu] = useState({ visible: false, x: 0, y: 0 });
+  const [viewWriting, setViewWriting] = useState(false);
 
   const messageStatus = (message, reciever, type, messageId) => {
     setDeleteMessageId(messageId);
@@ -44,7 +45,7 @@ const Messages = props => {
     setNewNotification(reciever);
   };
 
-  const { sendMessage, addGroup, deleteChatMessage, messageReceivedContol } = useWebSocket(
+  const { sendMessage, addGroup, deleteChatMessage, messageReceivedContol, messageWriting } = useWebSocket(
     brokerUrl,
     userName,
     activeUser,
@@ -59,6 +60,8 @@ const Messages = props => {
     setActivePage,
     deliveredMessage,
     setDeliveredMessage,
+    setViewWriting,
+    viewWriting,
   );
 
   const handleContextMenu = (event, id) => {
@@ -328,7 +331,7 @@ const Messages = props => {
             ) {
               messageReceivedContol(
                 e?.message?.traceId,
-                e?.message?.reciever,
+                e?.message?.receiver,
                 e?.message?.sender,
                 e?.message?.messageId,
                 false,
@@ -593,6 +596,21 @@ const Messages = props => {
                 <div ref={messagesEndRef} />
               </div>
               <div class="card-footer">
+                <div
+                  style={{
+                    color: 'white',
+                    marginLeft: 40,
+                    marginBottom: 2,
+                    display:
+                      viewWriting?.sender !== sessionStorage.getItem('userName')
+                        ? viewWriting?.writing
+                          ? 'block'
+                          : 'none'
+                        : 'none',
+                  }}
+                >
+                  Yazıyor..
+                </div>
                 <div class="input-group">
                   <div class="input-group-append">
                     <span class="input-group-text attach_btn">
@@ -604,7 +622,26 @@ const Messages = props => {
                     disabled={activePage}
                     class="form-control type_msg"
                     placeholder="Type your message..."
-                    onChange={e => setMessageText(e?.target.value)}
+                    onChange={e => {
+                      setMessageText(e?.target.value);
+                      if (e?.target?.value) {
+                        if (!viewWriting?.writing) {
+                          messageWriting(
+                            true,
+                            sessionStorage.getItem('userName'),
+                            activeUser?.userName,
+                            activeUser?.isGroup,
+                          );
+                        }
+                      } else {
+                        messageWriting(
+                          false,
+                          sessionStorage.getItem('userName'),
+                          activeUser?.userName,
+                          activeUser?.isGroup,
+                        );
+                      }
+                    }}
                     value={messageText || ''}
                   ></textarea>
                   <div class="input-group-append">

@@ -16,6 +16,8 @@ const useWebSocket = (
   setActivePage,
   deliveredMessage,
   setDeliveredMessage,
+  setViewWriting,
+  viewWriting,
 ) => {
   const stompClientRef = useRef(null);
   const [newMessage, setNewMessage] = useState('');
@@ -43,7 +45,7 @@ const useWebSocket = (
     if (stompClientRef?.current && stompClientRef?.current?.connected) {
       const mainRoute = `/user/${userName}/messages`;
       stompClientRef?.current.subscribe(mainRoute, message => {
-        const { type, sender, content, sendTime, receiver, messageId, freeze } = JSON.parse(message.body);
+        const { type, sender, content, sendTime, receiver, messageId, freeze, writing } = JSON.parse(message.body);
         console.log(type, sender, content, receiver, 'main');
         if (type === 'CHAT_MESSAGE') {
           messageStatus(
@@ -108,6 +110,9 @@ const useWebSocket = (
         }
         if (type === 'SYSTEM_FREEZE_MESSAGE') {
           setActivePage(freeze);
+        }
+        if (type === 'WRITE_CHAT_MESSAGE') {
+          setViewWriting({ sender: sender, writing: writing });
         }
       });
       sendFetchRegistryRequest(userName);
@@ -253,7 +258,32 @@ const useWebSocket = (
     });
   };
 
-  return { userMessageList, setUserMassageList, sendMessage, addGroup, deleteChatMessage, messageReceivedContol };
+  const messageWriting = (writing, sender, receiver, isGroup) => {
+    stompClientRef?.current?.publish({
+      destination: '/app/chat.sendMessage',
+      body: JSON.stringify({
+        type: 'WRITE_CHAT_MESSAGE',
+        payload: {
+          traceId: crypto.randomUUID(),
+          sender: sender,
+          receiver: receiver,
+          type: 'WRITE_CHAT_MESSAGE',
+          writing: writing,
+          isGroup: isGroup || false,
+        },
+      }),
+    });
+  };
+
+  return {
+    userMessageList,
+    setUserMassageList,
+    sendMessage,
+    addGroup,
+    deleteChatMessage,
+    messageReceivedContol,
+    messageWriting,
+  };
 };
 
 export default useWebSocket;
