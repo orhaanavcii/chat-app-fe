@@ -236,7 +236,7 @@ const useWebSocket = (
   };
 
   const messageReceivedContol = (traceId, sender, receiver, messageId, isGroup) => {
-    stompClientRef.current.publish({
+    stompClientRef?.current?.publish({
       destination: '/app/chat.sendMessage',
       body: JSON.stringify({
         type: 'CHAT_MESSAGE_DELIVERED',

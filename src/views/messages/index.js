@@ -309,8 +309,17 @@ const Messages = props => {
               }
             }
           });
-          setUserMassageList(tempMessage?.messages);
           setActiveChatKey(tempMessage?.chatKey);
+          const tempMessageList = [];
+          tempMessage?.messages?.forEach(e => {
+            if (e?.messageOwnerDetails?.find(x => !x?.delivered)) {
+              tempMessageList.push({ ...e, message: { ...e?.message, deliveredIcon: 'fa-solid fa-check' } });
+            } else {
+              tempMessageList.push({ ...e, message: { ...e?.message, deliveredIcon: 'fa-solid fa-check-double' } });
+            }
+          });
+          setUserMassageList(tempMessageList);
+
           tempMessage?.messages?.forEach(e => {
             if (
               e?.messageOwnerDetails?.find(
