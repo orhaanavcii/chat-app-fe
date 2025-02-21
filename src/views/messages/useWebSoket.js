@@ -18,6 +18,8 @@ const useWebSocket = (
   setDeliveredMessage,
   setViewWriting,
   viewWriting,
+  seenMessageList,
+  setSeenMessageList,
 ) => {
   const stompClientRef = useRef(null);
   const [newMessage, setNewMessage] = useState('');
@@ -46,7 +48,7 @@ const useWebSocket = (
       const mainRoute = `/user/${userName}/messages`;
       stompClientRef?.current.subscribe(mainRoute, message => {
         const { type, sender, content, sendTime, receiver, messageId, freeze, writing } = JSON.parse(message.body);
-        console.log(type, sender, content, receiver, 'main');
+        console.log(type, sender, receiver, 'main');
         if (type === 'CHAT_MESSAGE') {
           messageStatus(
             { message: { content: content, sendTime: sendTime, messageId: messageId } },
@@ -113,6 +115,16 @@ const useWebSocket = (
         }
         if (type === 'WRITE_CHAT_MESSAGE') {
           setViewWriting({ sender: sender, writing: writing });
+        }
+        if (type === 'SEEN_CHAT_MESSAGE') {
+          console.log(type, 'seen',seenMessageList);
+          if (seenMessageList) {
+            const tempData = [...seenMessageList];
+            tempData.push({ messageId: messageId });
+            setSeenMessageList(tempData);
+          } else {
+            setSeenMessageList([{ messageId: messageId }]);
+          }
         }
       });
       sendFetchRegistryRequest(userName);
@@ -275,6 +287,25 @@ const useWebSocket = (
     });
   };
 
+  const seenChatMessage = (messageId, seenTime, sender, receiver, isGroup) => {
+    console.log('bir', messageId, seenTime, sender, receiver, isGroup);
+    stompClientRef?.current?.publish({
+      destination: '/app/chat.sendMessage',
+      body: JSON.stringify({
+        type: 'SEEN_CHAT_MESSAGE',
+        payload: {
+          traceId: crypto.randomUUID(),
+          sender: sender,
+          receiver: receiver,
+          type: 'SEEN_CHAT_MESSAGE',
+          seenTime: seenTime,
+          isGroup:  false,
+          messageId: messageId,
+        },
+      }),
+    });
+  };
+
   return {
     userMessageList,
     setUserMassageList,
@@ -283,6 +314,7 @@ const useWebSocket = (
     deleteChatMessage,
     messageReceivedContol,
     messageWriting,
+    seenChatMessage,
   };
 };
 

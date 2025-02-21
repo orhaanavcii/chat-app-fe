@@ -37,6 +37,7 @@ const Messages = props => {
   const toast = useRef(null);
   const [menu, setMenu] = useState({ visible: false, x: 0, y: 0 });
   const [viewWriting, setViewWriting] = useState(false);
+  const [seenMessageList, setSeenMessageList] = useState();
 
   const messageStatus = (message, reciever, type, messageId) => {
     setDeleteMessageId(messageId);
@@ -45,24 +46,27 @@ const Messages = props => {
     setNewNotification(reciever);
   };
 
-  const { sendMessage, addGroup, deleteChatMessage, messageReceivedContol, messageWriting } = useWebSocket(
-    brokerUrl,
-    userName,
-    activeUser,
-    setUserMassageList,
-    userMessageList,
-    scrollToBottom,
-    notification,
-    setNotification,
-    setAddUserList,
-    addUserList,
-    messageStatus,
-    setActivePage,
-    deliveredMessage,
-    setDeliveredMessage,
-    setViewWriting,
-    viewWriting,
-  );
+  const { sendMessage, addGroup, deleteChatMessage, messageReceivedContol, messageWriting, seenChatMessage } =
+    useWebSocket(
+      brokerUrl,
+      userName,
+      activeUser,
+      setUserMassageList,
+      userMessageList,
+      scrollToBottom,
+      notification,
+      setNotification,
+      setAddUserList,
+      addUserList,
+      messageStatus,
+      setActivePage,
+      deliveredMessage,
+      setDeliveredMessage,
+      setViewWriting,
+      viewWriting,
+      seenMessageList,
+      setSeenMessageList,
+    );
 
   const handleContextMenu = (event, id) => {
     if (!activePage) {
@@ -178,6 +182,18 @@ const Messages = props => {
   }, [deliveredMessage]);
 
   useEffect(() => {
+    if (seenMessageList) {
+      setUserMassageList(
+        userMessageList?.map(e =>
+          seenMessageList?.find(x => x?.messageId === e?.message?.messageId)
+            ? { ...e, message: { ...e?.message, seen: true } }
+            : { ...e },
+        ),
+      );
+    }
+  }, [seenMessageList]);
+
+  useEffect(() => {
     if (filterList) {
       if (!activeUser) {
         setTimeout(() => {
@@ -242,7 +258,7 @@ const Messages = props => {
     );
   };
 
-  const outMessageTemp = (user, message, time, delivered, id, icon) => {
+  const outMessageTemp = (user, message, time, delivered, id, icon, isSeen) => {
     return (
       <div class="d-flex justify-content-end mb-4">
         <div
@@ -266,7 +282,7 @@ const Messages = props => {
             {time && format(new Date(time), 'HH:mm')}
             <i
               class={icon ? icon : 'fa-solid fa-check-double'}
-              style={{ margin: '0px 0px 0px 5px', position: 'relative', top: '-2px' }}
+              style={{ margin: '0px 0px 0px 5px', position: 'relative', top: '-2px', color: isSeen ? 'blue' : 'gray' }}
             ></i>
             {menu?.id === id && menu.visible && (
               <ul
@@ -315,10 +331,17 @@ const Messages = props => {
           setActiveChatKey(tempMessage?.chatKey);
           const tempMessageList = [];
           tempMessage?.messages?.forEach(e => {
+            const isSeen = e?.messageOwnerDetails?.find(x => !x?.seen);
             if (e?.messageOwnerDetails?.find(x => !x?.delivered)) {
-              tempMessageList.push({ ...e, message: { ...e?.message, deliveredIcon: 'fa-solid fa-check' } });
+              tempMessageList.push({
+                ...e,
+                message: { ...e?.message, deliveredIcon: 'fa-solid fa-check', seen: !isSeen },
+              });
             } else {
-              tempMessageList.push({ ...e, message: { ...e?.message, deliveredIcon: 'fa-solid fa-check-double' } });
+              tempMessageList.push({
+                ...e,
+                message: { ...e?.message, deliveredIcon: 'fa-solid fa-check-double', seen: !isSeen },
+              });
             }
           });
           setUserMassageList(tempMessageList);
@@ -334,10 +357,27 @@ const Messages = props => {
                 e?.message?.receiver,
                 e?.message?.sender,
                 e?.message?.messageId,
-                false,
+                activeUser?.isGroup,
               );
             }
           });
+
+          tempMessage?.messages?.forEach(e => {
+            console.log(e?.messageOwnerDetails?.find(x => !x?.seen && x?.owner?.username === sessionStorage.getItem('userName')),"üüüü")
+            if (
+              e?.messageOwnerDetails?.find(x => !x?.seen && x?.owner?.username === sessionStorage.getItem('userName'))
+            ) {
+              seenChatMessage(
+                e?.message?.messageId,
+                new Date(),
+                e?.message?.sender,
+                e?.message?.receiver,
+                e?.message?.messageId,
+                activeUser?.isGroup,
+              );
+            }
+          });
+
           scrollToBottom();
         });
       }
@@ -583,6 +623,7 @@ const Messages = props => {
                         true,
                         e?.message?.messageId || Math.random(),
                         e?.message?.deliveredIcon,
+                        e?.message?.isSeen,
                       );
                     } else {
                       return inMessageTemp(
