@@ -499,7 +499,7 @@ const Messages = props => {
       <Toast ref={toast} />
       <div class="container-fluid h-50" onClick={handleClick}>
         <div class="row justify-content-center h-100">
-          <div class="col-md-12 col-lg-4 col-xl-3 chat" style={{ marginBottom: 15 }}>
+          <div class="col-xs-5 col-md-5 col-lg-4 col-xl-3 chat" style={{ marginBottom: 15 }}>
             <div class="card mb-sm-3 mb-md-0 contacts_card">
               <div class="card-header">
                 <div class="input-group">
@@ -596,7 +596,7 @@ const Messages = props => {
               <div class="card-footer"></div>
             </div>
           </div>
-          <div class="col-md-12 col-lg-8 col-xl-6 chat">
+          <div class="col-xs-7 col-md-7 col-lg-8 col-xl-6 chat">
             <div class="card">
               <div class="card-header msg_head">
                 <div class="d-flex bd-highlight">
@@ -620,11 +620,13 @@ const Messages = props => {
                       position: 'absolute',
                       left: '-20px',
                       top: '34px',
-                      cursor: 'pointer',
                     }}
-                    onClick={() => !activePage && deleteAllMessage(sessionStorage.getItem('userName'))}
                   >
-                    <i class="fa-solid fa-trash-can" style={{ color: 'white' }}></i>
+                    <i
+                      class="fa-solid fa-trash-can"
+                      style={{ color: 'white', cursor: 'pointer' }}
+                      onClick={() => !activePage && deleteAllMessage(sessionStorage.getItem('userName'))}
+                    ></i>
                   </div>
                 </div>
               </div>
