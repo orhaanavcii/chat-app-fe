@@ -102,6 +102,15 @@ const useWebSocket = (
             setDeliveredMessage([{ messageId: messageId }]);
           }
         }
+        if (type === 'SEEN_CHAT_MESSAGE') {
+          if (seenMessageList) {
+            const tempData = [...seenMessageList];
+            tempData.push({ messageId: messageId });
+            setSeenMessageList(tempData);
+          } else {
+            setSeenMessageList([{ messageId: messageId }]);
+          }
+        }
         if (type === 'DELETE_CHAT_MESSAGE') {
           messageStatus(
             { message: { content: content, sendTime: sendTime } },
@@ -114,17 +123,7 @@ const useWebSocket = (
           setActivePage(freeze);
         }
         if (type === 'WRITE_CHAT_MESSAGE') {
-          setViewWriting({ sender: sender, writing: writing });
-        }
-        if (type === 'SEEN_CHAT_MESSAGE') {
-          console.log(type, 'seen',seenMessageList);
-          if (seenMessageList) {
-            const tempData = [...seenMessageList];
-            tempData.push({ messageId: messageId });
-            setSeenMessageList(tempData);
-          } else {
-            setSeenMessageList([{ messageId: messageId }]);
-          }
+          setViewWriting({ receiver: receiver, sender: sender, writing: writing });
         }
       });
       sendFetchRegistryRequest(userName);
@@ -288,7 +287,6 @@ const useWebSocket = (
   };
 
   const seenChatMessage = (messageId, seenTime, sender, receiver, isGroup) => {
-    console.log('bir', messageId, seenTime, sender, receiver, isGroup);
     stompClientRef?.current?.publish({
       destination: '/app/chat.sendMessage',
       body: JSON.stringify({
@@ -299,7 +297,7 @@ const useWebSocket = (
           receiver: receiver,
           type: 'SEEN_CHAT_MESSAGE',
           seenTime: seenTime,
-          isGroup:  false,
+          isGroup: isGroup || false,
           messageId: messageId,
         },
       }),

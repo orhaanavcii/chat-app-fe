@@ -112,10 +112,11 @@ const Messages = props => {
   useEffect(() => {
     if (activeUser) {
       if (newNotification && newMessage) {
-        console.log('noti user:', newNotification);
-        console.log('active user:', activeUser);
-        console.log('type:', type);
-        console.log('delete:', deleteMessageId);
+        // console.log('noti user:', newNotification);
+        // console.log('active user:', activeUser);
+        // console.log('type:', type);
+        // console.log('delete:', deleteMessageId);
+        console.log(newMessage,newNotification,"newMessage")
         if (type === 'delete') {
           if (deleteMessageId) {
             setUserMassageList(userMessageList?.filter(e => e?.message?.messageId !== deleteMessageId));
@@ -139,6 +140,13 @@ const Messages = props => {
                 : activeUser?.userName,
             });
             setUserMassageList(tempList);
+            seenChatMessage(
+              newMessage?.message?.messageId,
+              new Date(),
+              activeUser?.userName,
+              newNotification?.user,
+              activeUser?.isGroup,
+            );
           } else {
             setUserMassageList([
               {
@@ -152,6 +160,13 @@ const Messages = props => {
                   : activeUser?.userName,
               },
             ]);
+            seenChatMessage(
+              newMessage?.message?.messageId,
+              new Date(),
+              activeUser?.userName,
+              newNotification?.user,
+              activeUser?.isGroup,
+            );
           }
           scrollToBottom();
         } else {
@@ -282,7 +297,12 @@ const Messages = props => {
             {time && format(new Date(time), 'HH:mm')}
             <i
               class={icon ? icon : 'fa-solid fa-check-double'}
-              style={{ margin: '0px 0px 0px 5px', position: 'relative', top: '-2px', color: isSeen ? 'blue' : 'gray' }}
+              style={{
+                margin: '0px 0px 0px 5px',
+                position: 'relative',
+                top: '-2px',
+                color: isSeen ? '#37a1ff' : 'gray',
+              }}
             ></i>
             {menu?.id === id && menu.visible && (
               <ul
@@ -331,7 +351,7 @@ const Messages = props => {
           setActiveChatKey(tempMessage?.chatKey);
           const tempMessageList = [];
           tempMessage?.messages?.forEach(e => {
-            const isSeen = e?.messageOwnerDetails?.find(x => !x?.seen);
+            const isSeen = e?.messageOwnerDetails?.find(x => !x?.seen) ? true : false;
             if (e?.messageOwnerDetails?.find(x => !x?.delivered)) {
               tempMessageList.push({
                 ...e,
@@ -345,34 +365,33 @@ const Messages = props => {
             }
           });
           setUserMassageList(tempMessageList);
-
-          tempMessage?.messages?.forEach(e => {
-            if (
-              e?.messageOwnerDetails?.find(
-                x => !x?.delivered && x?.owner?.username === sessionStorage.getItem('userName'),
-              )
-            ) {
-              messageReceivedContol(
-                e?.message?.traceId,
-                e?.message?.receiver,
-                e?.message?.sender,
-                e?.message?.messageId,
-                activeUser?.isGroup,
-              );
-            }
+          res.data?.data?.forEach(data => {
+            data?.messages?.forEach(e => {
+              if (
+                e?.messageOwnerDetails?.find(
+                  x => !x?.delivered && x?.owner?.username === sessionStorage.getItem('userName'),
+                )
+              ) {
+                messageReceivedContol(
+                  e?.message?.traceId,
+                  e?.message?.receiver,
+                  e?.message?.sender,
+                  e?.message?.messageId,
+                  e?.groupChat,
+                );
+              }
+            });
           });
 
           tempMessage?.messages?.forEach(e => {
-            console.log(e?.messageOwnerDetails?.find(x => !x?.seen && x?.owner?.username === sessionStorage.getItem('userName')),"üüüü")
             if (
               e?.messageOwnerDetails?.find(x => !x?.seen && x?.owner?.username === sessionStorage.getItem('userName'))
             ) {
               seenChatMessage(
                 e?.message?.messageId,
                 new Date(),
-                e?.message?.sender,
                 e?.message?.receiver,
-                e?.message?.messageId,
+                e?.message?.sender,
                 activeUser?.isGroup,
               );
             }
@@ -530,6 +549,7 @@ const Messages = props => {
                             ) {
                               setActiveUser(e);
                               setUserMassageList(null);
+                              setMessageText('');
                             }
                           }}
                         >
@@ -623,7 +643,7 @@ const Messages = props => {
                         true,
                         e?.message?.messageId || Math.random(),
                         e?.message?.deliveredIcon,
-                        e?.message?.isSeen,
+                        e?.message?.seen,
                       );
                     } else {
                       return inMessageTemp(
@@ -642,8 +662,11 @@ const Messages = props => {
                     color: 'white',
                     marginLeft: 40,
                     marginBottom: 2,
+                    position: 'absolute',
+                    bottom: '67px',
                     display:
-                      viewWriting?.sender !== sessionStorage.getItem('userName')
+                      viewWriting?.receiver === sessionStorage.getItem('userName') &&
+                      viewWriting?.sender === activeUser?.userName
                         ? viewWriting?.writing
                           ? 'block'
                           : 'none'
@@ -665,16 +688,14 @@ const Messages = props => {
                     placeholder="Type your message..."
                     onChange={e => {
                       setMessageText(e?.target.value);
-                      if (e?.target?.value) {
-                        if (!viewWriting?.writing) {
-                          messageWriting(
-                            true,
-                            sessionStorage.getItem('userName'),
-                            activeUser?.userName,
-                            activeUser?.isGroup,
-                          );
-                        }
-                      } else {
+                      if (e?.target?.value?.length < 2 && e?.target?.value?.length !== 0) {
+                        messageWriting(
+                          true,
+                          sessionStorage.getItem('userName'),
+                          activeUser?.userName,
+                          activeUser?.isGroup,
+                        );
+                      } else if (e?.target?.value?.length === 0) {
                         messageWriting(
                           false,
                           sessionStorage.getItem('userName'),
@@ -692,6 +713,12 @@ const Messages = props => {
                         if (!activePage) {
                           sendMessage(messageText, sessionStorage.getItem('userName'), activeUser?.isGroup);
                           setMessageText('');
+                          messageWriting(
+                            false,
+                            sessionStorage.getItem('userName'),
+                            activeUser?.userName,
+                            activeUser?.isGroup,
+                          );
                           scrollToBottom();
                           setFilterList(
                             filterList?.map(e => {
