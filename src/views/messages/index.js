@@ -116,7 +116,7 @@ const Messages = props => {
         // console.log('active user:', activeUser);
         // console.log('type:', type);
         // console.log('delete:', deleteMessageId);
-        console.log(newMessage,newNotification,"newMessage")
+        console.log(newMessage, newNotification, 'newMessage');
         if (type === 'delete') {
           if (deleteMessageId) {
             setUserMassageList(userMessageList?.filter(e => e?.message?.messageId !== deleteMessageId));
@@ -143,7 +143,7 @@ const Messages = props => {
             seenChatMessage(
               newMessage?.message?.messageId,
               new Date(),
-              activeUser?.userName,
+              sessionStorage.getItem('userName'),
               newNotification?.user,
               activeUser?.isGroup,
             );
@@ -163,7 +163,7 @@ const Messages = props => {
             seenChatMessage(
               newMessage?.message?.messageId,
               new Date(),
-              activeUser?.userName,
+              sessionStorage.getItem('userName'),
               newNotification?.user,
               activeUser?.isGroup,
             );
@@ -390,8 +390,8 @@ const Messages = props => {
               seenChatMessage(
                 e?.message?.messageId,
                 new Date(),
+                sessionStorage.getItem('userName'),
                 e?.message?.receiver,
-                e?.message?.sender,
                 activeUser?.isGroup,
               );
             }
