@@ -12,7 +12,7 @@ const AppSidebar = () => {
   const dispatch = useDispatch();
   const unfoldable = useSelector(state => state.sidebarUnfoldable);
   return (
-    <CSidebar position="sticky" unfoldable={!unfoldable}>
+    <CSidebar position="fixed" unfoldable={!unfoldable}>
       <CSidebarBrand className="d-none d-md-flex" to="/">
         <center>
           <a href="/dashboard">
