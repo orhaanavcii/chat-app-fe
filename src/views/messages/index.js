@@ -144,7 +144,7 @@ const Messages = props => {
               newMessage?.message?.messageId,
               new Date(),
               sessionStorage.getItem('userName'),
-              newNotification?.user,
+              activeUser?.userName,
               activeUser?.isGroup,
             );
           } else {
@@ -164,7 +164,7 @@ const Messages = props => {
               newMessage?.message?.messageId,
               new Date(),
               sessionStorage.getItem('userName'),
-              newNotification?.user,
+              activeUser?.userName,
               activeUser?.isGroup,
             );
           }
@@ -391,7 +391,7 @@ const Messages = props => {
                 e?.message?.messageId,
                 new Date(),
                 sessionStorage.getItem('userName'),
-                e?.message?.receiver,
+                e?.message?.sender,
                 activeUser?.isGroup,
               );
             }
@@ -499,6 +499,13 @@ const Messages = props => {
       <Toast ref={toast} />
       <div class="container-fluid h-50" onClick={handleClick}>
         <div class="row justify-content-center h-100">
+          {/* <CButton
+            onClick={() => {
+              seenChatMessage('e3826a59-fa7e-4d69-9b48-58395a081683', new Date(), 'oavci', 'edongez', false);
+            }}
+          >
+            test
+          </CButton> */}
           <div class="col-xs-12 col-md-5 col-lg-4 col-xl-3 chat" style={{ marginBottom: 15 }}>
             <div class="card mb-sm-3 mb-md-0 contacts_card">
               <div class="card-header">
